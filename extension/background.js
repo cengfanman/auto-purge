@@ -251,7 +251,7 @@ async function updateBadgeForTab(tabId, isMatched) {
         tabId: tabId
       });
       chrome.action.setTitle({
-        title: "AutoPurge - 已识别成人网站，将自动清理历史记录",
+        title: "AutoPurge - Adult website detected, history will be cleared automatically",
         tabId: tabId
       });
     } else {
@@ -381,40 +381,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   url: tab.url,
                   title: tab.title || '无标题'
                 });
-              } catch (urlError) {
-                console.error('Failed to parse URL:', tab.url, urlError);
-                sendResponse({ 
-                  isMatched: false, 
-                  hostname: '无效URL',
-                  url: tab.url,
-                  title: tab.title || '无标题',
-                  error: 'URL解析失败'
-                });
-              }
-            } else {
-              console.log('Tab has restricted URL:', tab.url);
+                          } catch (urlError) {
+              console.error('Failed to parse URL:', tab.url, urlError);
               sendResponse({ 
                 isMatched: false, 
-                hostname: '受限页面',
-                url: tab.url || '无URL',
-                title: tab.title || '无标题',
-                error: '无法访问此页面'
+                hostname: 'Invalid URL',
+                url: tab.url,
+                title: tab.title || 'No Title',
+                error: 'URL parsing failed'
               });
             }
           } else {
-            console.log('No active tabs found');
+            console.log('Tab has restricted URL:', tab.url);
             sendResponse({ 
               isMatched: false, 
-              error: '未找到活动标签页' 
+              hostname: 'Restricted Page',
+              url: tab.url || 'No URL',
+              title: tab.title || 'No Title',
+              error: 'Cannot access this page'
             });
           }
-        } catch (error) {
-          console.error('Failed to get current tab status:', error);
+        } else {
+          console.log('No active tabs found');
           sendResponse({ 
             isMatched: false, 
-            error: error.message || '未知错误' 
+            error: 'No active tab found' 
           });
         }
+      } catch (error) {
+        console.error('Failed to get current tab status:', error);
+        sendResponse({ 
+          isMatched: false, 
+          error: error.message || 'Unknown error' 
+        });
+      }
       })();
       return true; // Keep message channel open for async response
       

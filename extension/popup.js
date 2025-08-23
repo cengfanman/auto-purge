@@ -76,7 +76,7 @@ async function loadCurrentTabStatus() {
       console.error('Background script test failed:', testError);
       updateCurrentSiteUI({ 
         isMatched: false, 
-        error: '背景脚本未响应' 
+        error: 'Background script not responding' 
       });
       return;
     }
@@ -85,7 +85,7 @@ async function loadCurrentTabStatus() {
     const tabStatus = await Promise.race([
       chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('请求超时')), 5000)
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
       )
     ]);
     
@@ -100,16 +100,16 @@ async function loadCurrentTabStatus() {
       console.warn('Invalid tab status response:', tabStatus);
       updateCurrentSiteUI({ 
         isMatched: false, 
-        error: '收到无效响应' 
+        error: 'Received invalid response' 
       });
     }
   } catch (error) {
     console.error('Failed to load current tab status:', error);
     // Try to provide more helpful error information
-    updateCurrentSiteUI({ 
-      isMatched: false, 
-      error: `连接失败: ${error.message || '未知错误'}` 
-    });
+          updateCurrentSiteUI({ 
+        isMatched: false, 
+        error: `Connection failed: ${error.message || 'Unknown error'}` 
+      });
     
     // Retry after a short delay
     setTimeout(async () => {
@@ -117,9 +117,9 @@ async function loadCurrentTabStatus() {
         console.log('Retrying to load current tab status...');
                         const retryStatus = await Promise.race([
                   chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' }),
-                  new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('重试超时')), 3000)
-                  )
+                          new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Retry timeout')), 3000)
+        )
                 ]);
                 
                 console.log('Retry successful:', retryStatus);
@@ -128,16 +128,16 @@ async function loadCurrentTabStatus() {
                   updateCurrentSiteUI(retryStatus);
                 } else {
                   console.warn('Invalid retry response:', retryStatus);
-                  updateCurrentSiteUI({ 
-                    isMatched: false, 
-                    error: '重试失败: 收到无效响应' 
-                  });
+                          updateCurrentSiteUI({ 
+          isMatched: false, 
+          error: 'Retry failed: Received invalid response' 
+        });
                 }
       } catch (retryError) {
         console.error('Retry also failed:', retryError);
         updateCurrentSiteUI({ 
           isMatched: false, 
-          error: `重试失败: ${retryError.message || '未知错误'}` 
+          error: `Retry failed: ${retryError.message || 'Unknown error'}` 
         });
       }
     }, 1000);
@@ -157,7 +157,7 @@ function updateCurrentSiteUI(tabStatus) {
   if (tabStatus.error) {
     // Error occurred
     siteIcon.textContent = '⚠️';
-    siteName.textContent = '获取失败';
+    siteName.textContent = 'Failed to get';
     siteStatusEl.textContent = tabStatus.error;
     detectionBadge.style.display = 'none';
     currentSiteStatus.classList.remove('detected');
@@ -165,31 +165,31 @@ function updateCurrentSiteUI(tabStatus) {
   } else if (tabStatus.isMatched) {
     // Site is detected
     siteIcon.textContent = '🔞';
-    siteName.textContent = tabStatus.hostname || '成人网站';
-    siteStatusEl.textContent = `将在 ${config.delaySec} 秒后清理历史记录`;
+    siteName.textContent = tabStatus.hostname || 'Adult Website';
+    siteStatusEl.textContent = `History will be cleared in ${config.delaySec} seconds`;
     detectionBadge.style.display = 'flex';
     currentSiteStatus.classList.add('detected');
     console.log('Site detected as adult content');
-  } else if (tabStatus.hostname && tabStatus.hostname !== '受限页面' && tabStatus.hostname !== '无效URL') {
+  } else if (tabStatus.hostname && tabStatus.hostname !== 'Restricted Page' && tabStatus.hostname !== 'Invalid URL') {
     // Normal site
     siteIcon.textContent = '🌐';
     siteName.textContent = tabStatus.hostname;
-    siteStatusEl.textContent = '此网站不在监控列表中';
+    siteStatusEl.textContent = 'This website is not in the monitoring list';
     detectionBadge.style.display = 'none';
     currentSiteStatus.classList.remove('detected');
     console.log('Normal site detected:', tabStatus.hostname);
   } else {
     // Special cases
     siteIcon.textContent = '🌐';
-    if (tabStatus.hostname === '受限页面') {
-      siteName.textContent = 'Chrome系统页面';
-      siteStatusEl.textContent = '无法在此页面运行扩展';
-    } else if (tabStatus.hostname === '无效URL') {
-      siteName.textContent = '无效页面';
-      siteStatusEl.textContent = '请访问有效的网页';
+    if (tabStatus.hostname === 'Restricted Page') {
+      siteName.textContent = 'Chrome System Page';
+      siteStatusEl.textContent = 'Extension cannot run on this page';
+    } else if (tabStatus.hostname === 'Invalid URL') {
+      siteName.textContent = 'Invalid Page';
+      siteStatusEl.textContent = 'Please visit a valid webpage';
     } else {
-      siteName.textContent = '无法获取当前网站';
-      siteStatusEl.textContent = '请刷新或切换到有效网页';
+      siteName.textContent = 'Unable to get current website';
+      siteStatusEl.textContent = 'Please refresh or switch to a valid webpage';
     }
     detectionBadge.style.display = 'none';
     currentSiteStatus.classList.remove('detected');
