@@ -10,119 +10,100 @@
   <div class="popup-container">
     <!-- Header -->
     <div class="header">
-      <h1>AutoPurge</h1>
-      <div class="status" id="statusIndicator">
-        <span class="status-dot"></span>
-        <span id="statusText">Loading...</span>
+      <div class="logo">
+        <img src="icon.png" alt="AutoPurge" class="logo-icon">
+        <h1>AutoPurge</h1>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Active</span>
       </div>
     </div>
 
     <!-- Current Site Status -->
-    <div class="section" id="currentSiteSection">
-      <div class="current-site-status" id="currentSiteStatus">
-        <div class="site-info">
-          <div class="site-icon" id="siteIcon">🌐</div>
-          <div class="site-details">
-            <div class="site-name" id="siteName">检查当前网站...</div>
-            <div class="site-status" id="siteStatus">正在检测...</div>
-          </div>
+    <div class="section current-site-section">
+      <h3>Current Site</h3>
+      <div class="site-info" id="siteInfo">
+        <div class="site-icon" id="siteIcon">🌐</div>
+        <div class="site-details">
+          <div class="site-name" id="siteName">Checking...</div>
+          <div class="site-status" id="siteStatus">Analyzing current page</div>
         </div>
         <div class="detection-badge" id="detectionBadge" style="display: none;">
-          <span>●</span>
-          <span>已识别</span>
+          <span class="badge-icon">●</span>
+          <span class="badge-text">Detected</span>
         </div>
       </div>
-      <div style="text-align: center; margin-top: 8px;">
-        <button class="btn btn-small" id="refreshSiteBtn">刷新状态</button>
-      </div>
+      <button class="btn btn-secondary btn-small" id="refreshSiteBtn">Refresh</button>
     </div>
 
-    <!-- Statistics -->
-    <div class="section">
+    <!-- Monitoring Status -->
+    <div class="section monitoring-section">
+      <h3>Active Monitoring</h3>
       <div class="stats-grid">
         <div class="stat-item">
-          <span class="stat-value" id="deletionsToday">-</span>
-          <span class="stat-label">Today</span>
+          <div class="stat-value" id="domainsCount">0</div>
+          <div class="stat-label">Domains</div>
         </div>
         <div class="stat-item">
-          <span class="stat-value" id="deletionsTotal">-</span>
-          <span class="stat-label">Total</span>
+          <div class="stat-value" id="deletionsToday">0</div>
+          <div class="stat-label">Today</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="deletionsTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+      <div class="config-info">
+        <div class="config-item">
+          <span class="config-label">Deletion Delay:</span>
+          <span class="config-value" id="delayTime">10s</span>
+        </div>
+        <div class="config-item">
+          <span class="config-label">Queue Size:</span>
+          <span class="config-value" id="queueSize">0</span>
         </div>
       </div>
     </div>
 
-    <!-- Quick History Cleanup -->
-    <div class="section">
-      <div class="section-title">Quick Cleanup</div>
-      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-        Delete recent browsing history (all sites)
-      </p>
-      
-      <div class="quick-actions">
-        <button class="btn btn-small" onclick="deleteRecentHistory(5)">
-          Last 5m
-        </button>
-        <button class="btn btn-small" onclick="deleteRecentHistory(15)">
-          Last 15m
-        </button>
-        <button class="btn btn-small" onclick="deleteRecentHistory(60)">
-          Last 1h
-        </button>
+    <!-- Quick Actions -->
+    <div class="section actions-section">
+      <h3>Quick Actions</h3>
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="toggleBtn">Disable</button>
+        <button class="btn btn-secondary" id="clearHistoryBtn">Clear Recent</button>
+        <button class="btn btn-secondary" id="settingsBtn">Settings</button>
       </div>
     </div>
 
-    <!-- Current Status -->
-    <div class="section">
-      <div class="section-title">Active Monitoring</div>
-      <div id="monitoringInfo">
-        <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
-          <span id="domainsCount">0</span> domains being monitored
+    <!-- Pro Features (if available) -->
+    <div class="section pro-section" id="proSection" style="display: none;">
+      <h3>Pro Features</h3>
+      <div class="pro-features">
+        <div class="pro-feature">
+          <span class="feature-icon">🔒</span>
+          <span class="feature-text">Shadow History</span>
         </div>
-        <div style="font-size: 13px; color: #666;">
-          Deletion delay: <span id="delayTime">10</span> seconds
+        <div class="pro-feature">
+          <span class="feature-icon">📊</span>
+          <span class="feature-text">Advanced Analytics</span>
+        </div>
+        <div class="pro-feature">
+          <span class="feature-icon">⚡</span>
+          <span class="feature-text">Priority Support</span>
         </div>
       </div>
+      <button class="btn btn-pro" id="upgradeBtn">Upgrade to Pro</button>
     </div>
 
-    <!-- Pending Deletions -->
-    <div class="section" id="pendingSection" style="display: none;">
-      <div class="section-title">Pending Deletions</div>
-      <div id="pendingCount" style="font-size: 13px; color: #ff6666;">
-        <span id="queueSize">0</span> URLs scheduled for deletion
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-links">
+        <a href="#" id="helpLink">Help</a>
+        <a href="#" id="feedbackLink">Feedback</a>
+        <a href="#" id="privacyLink">Privacy</a>
       </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="section">
-      <button id="toggleBtn" class="btn btn-full" onclick="toggleExtension()">
-        Enable
-      </button>
-      <button class="btn btn-secondary btn-full" onclick="openOptions()">
-        Settings
-      </button>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="section" id="activitySection" style="display: none;">
-      <div class="section-title">Recent Activity</div>
-      <div id="recentActivity" style="font-size: 12px; color: #666;">
-        No recent deletions
-      </div>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px;">
-      <div style="font-size: 14px; color: #666;">Processing...</div>
-    </div>
-
-    <!-- Success Message -->
-    <div id="successMessage" class="alert alert-success" style="display: none;">
-      History cleaned successfully!
-    </div>
-
-    <!-- Error Message -->
-    <div id="errorMessage" class="alert alert-warning" style="display: none;">
-      <span id="errorText">An error occurred</span>
+      <div class="version">v1.0.0</div>
     </div>
   </div>
 

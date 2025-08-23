@@ -1,44 +1,50 @@
 /**
  * Popup script for AutoPurge Extension
- * Responsibilities:
- * - Display current status and statistics
- * - Provide quick history cleanup actions
- * - Show pending deletions queue
- * - Toggle extension on/off
- * - Navigate to options page
+ * Modern, clean interface with proper error handling
  */
 
 // DOM elements
-const statusIndicator = document.getElementById('statusIndicator');
+const statusBadge = document.getElementById('statusBadge');
+const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
+const siteIcon = document.getElementById('siteIcon');
+const siteName = document.getElementById('siteName');
+const siteStatus = document.getElementById('siteStatus');
+const detectionBadge = document.getElementById('detectionBadge');
+const refreshSiteBtn = document.getElementById('refreshSiteBtn');
+const domainsCount = document.getElementById('domainsCount');
 const deletionsToday = document.getElementById('deletionsToday');
 const deletionsTotal = document.getElementById('deletionsTotal');
-const domainsCount = document.getElementById('domainsCount');
 const delayTime = document.getElementById('delayTime');
 const queueSize = document.getElementById('queueSize');
-const pendingSection = document.getElementById('pendingSection');
 const toggleBtn = document.getElementById('toggleBtn');
-const loadingIndicator = document.getElementById('loadingIndicator');
-const successMessage = document.getElementById('successMessage');
-const errorMessage = document.getElementById('errorMessage');
-const errorText = document.getElementById('errorText');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const proSection = document.getElementById('proSection');
+const upgradeBtn = document.getElementById('upgradeBtn');
+const helpLink = document.getElementById('helpLink');
+const feedbackLink = document.getElementById('feedbackLink');
+const privacyLink = document.getElementById('privacyLink');
 
 // Current configuration
 let config = {};
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('Popup initialized');
   await loadData();
   setupEventListeners();
   updateUI();
   
   // Refresh data periodically while popup is open
-  setInterval(refreshStats, 2000);
+  setInterval(refreshStats, 3000);
 });
 
 // Load configuration and statistics
 async function loadData() {
   try {
+    console.log('Loading extension data...');
+    
     // Get configuration
     config = await chrome.runtime.sendMessage({ action: 'getConfig' });
     
@@ -46,11 +52,19 @@ async function loadData() {
       throw new Error('Failed to load configuration');
     }
     
+    console.log('Configuration loaded:', config);
+    
     // Get current tab status
     await loadCurrentTabStatus();
+    
+    // Load statistics
+    await loadStats();
+    
   } catch (error) {
     console.error('Failed to load data:', error);
     showError('Failed to load extension data');
+    
+    // Set default config
     config = {
       enabled: false,
       delaySec: 10,
@@ -64,12 +78,9 @@ async function loadData() {
 async function loadCurrentTabStatus() {
   try {
     console.log('Loading current tab status...');
-    console.log('Chrome runtime available:', !!chrome.runtime);
-    console.log('Chrome tabs available:', !!chrome.tabs);
     
     // First test if background script is responding
     try {
-      console.log('Testing background script response...');
       const testResponse = await chrome.runtime.sendMessage({ action: 'getConfig' });
       console.log('Background script test response:', testResponse);
     } catch (testError) {
@@ -81,7 +92,7 @@ async function loadCurrentTabStatus() {
       return;
     }
     
-    // Add timeout to prevent hanging
+    // Get current tab status with timeout
     const tabStatus = await Promise.race([
       chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' }),
       new Promise((_, reject) => 
@@ -90,8 +101,6 @@ async function loadCurrentTabStatus() {
     ]);
     
     console.log('Received tab status:', tabStatus);
-    console.log('Tab status type:', typeof tabStatus);
-    console.log('Tab status keys:', tabStatus ? Object.keys(tabStatus) : 'no keys');
     
     // Check if we got a valid response
     if (tabStatus && typeof tabStatus === 'object' && tabStatus !== null) {
@@ -103,36 +112,36 @@ async function loadCurrentTabStatus() {
         error: 'Received invalid response' 
       });
     }
+    
   } catch (error) {
     console.error('Failed to load current tab status:', error);
-    // Try to provide more helpful error information
-          updateCurrentSiteUI({ 
-        isMatched: false, 
-        error: `Connection failed: ${error.message || 'Unknown error'}` 
-      });
+    updateCurrentSiteUI({ 
+      isMatched: false, 
+      error: `Connection failed: ${error.message || 'Unknown error'}` 
+    });
     
     // Retry after a short delay
     setTimeout(async () => {
       try {
         console.log('Retrying to load current tab status...');
-                        const retryStatus = await Promise.race([
-                  chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' }),
-                          new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Retry timeout')), 3000)
-        )
-                ]);
-                
-                console.log('Retry successful:', retryStatus);
-                
-                if (retryStatus && typeof retryStatus === 'object' && retryStatus !== null) {
-                  updateCurrentSiteUI(retryStatus);
-                } else {
-                  console.warn('Invalid retry response:', retryStatus);
-                          updateCurrentSiteUI({ 
-          isMatched: false, 
-          error: 'Retry failed: Received invalid response' 
-        });
-                }
+        const retryStatus = await Promise.race([
+          chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Retry timeout')), 3000)
+          )
+        ]);
+        
+        console.log('Retry successful:', retryStatus);
+        
+        if (retryStatus && typeof retryStatus === 'object' && retryStatus !== null) {
+          updateCurrentSiteUI(retryStatus);
+        } else {
+          console.warn('Invalid retry response:', retryStatus);
+          updateCurrentSiteUI({ 
+            isMatched: false, 
+            error: 'Retry failed: Received invalid response' 
+          });
+        }
       } catch (retryError) {
         console.error('Retry also failed:', retryError);
         updateCurrentSiteUI({ 
@@ -144,227 +153,247 @@ async function loadCurrentTabStatus() {
   }
 }
 
+// Load statistics
+async function loadStats() {
+  try {
+    const stats = await chrome.runtime.sendMessage({ action: 'getStats' });
+    
+    if (stats) {
+      deletionsToday.textContent = stats.deletionsToday || 0;
+      deletionsTotal.textContent = stats.deletionsTotal || 0;
+      queueSize.textContent = stats.queueSize || 0;
+    }
+    
+    // Update domains count
+    if (config && config.userDomains) {
+      const totalDomains = (config.userDomains.length || 0) + 20; // 20 preset domains
+      domainsCount.textContent = totalDomains;
+    }
+    
+  } catch (error) {
+    console.error('Failed to load stats:', error);
+  }
+}
+
 // Update current site UI
 function updateCurrentSiteUI(tabStatus) {
-  const siteIcon = document.getElementById('siteIcon');
-  const siteName = document.getElementById('siteName');
-  const siteStatusEl = document.getElementById('siteStatus');
-  const detectionBadge = document.getElementById('detectionBadge');
-  const currentSiteStatus = document.getElementById('currentSiteStatus');
-
   console.log('Updating current site UI with:', tabStatus);
 
   if (tabStatus.error) {
     // Error occurred
     siteIcon.textContent = '⚠️';
     siteName.textContent = 'Failed to get';
-    siteStatusEl.textContent = tabStatus.error;
+    siteStatus.textContent = tabStatus.error;
     detectionBadge.style.display = 'none';
-    currentSiteStatus.classList.remove('detected');
     console.error('Tab status error:', tabStatus.error);
   } else if (tabStatus.isMatched) {
     // Site is detected
     siteIcon.textContent = '🔞';
     siteName.textContent = tabStatus.hostname || 'Adult Website';
-    siteStatusEl.textContent = `History will be cleared in ${config.delaySec} seconds`;
+    siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
     detectionBadge.style.display = 'flex';
-    currentSiteStatus.classList.add('detected');
     console.log('Site detected as adult content');
   } else if (tabStatus.hostname && tabStatus.hostname !== 'Restricted Page' && tabStatus.hostname !== 'Invalid URL') {
     // Normal site
     siteIcon.textContent = '🌐';
     siteName.textContent = tabStatus.hostname;
-    siteStatusEl.textContent = 'This website is not in the monitoring list';
+    siteStatus.textContent = 'This website is not in the monitoring list';
     detectionBadge.style.display = 'none';
-    currentSiteStatus.classList.remove('detected');
     console.log('Normal site detected:', tabStatus.hostname);
   } else {
     // Special cases
     siteIcon.textContent = '🌐';
     if (tabStatus.hostname === 'Restricted Page') {
       siteName.textContent = 'Chrome System Page';
-      siteStatusEl.textContent = 'Extension cannot run on this page';
+      siteStatus.textContent = 'Extension cannot run on this page';
     } else if (tabStatus.hostname === 'Invalid URL') {
       siteName.textContent = 'Invalid Page';
-      siteStatusEl.textContent = 'Please visit a valid webpage';
+      siteStatus.textContent = 'Please visit a valid webpage';
     } else {
       siteName.textContent = 'Unable to get current website';
-      siteStatusEl.textContent = 'Please refresh or switch to a valid webpage';
+      siteStatus.textContent = 'Please refresh or switch to a valid webpage';
     }
     detectionBadge.style.display = 'none';
-    currentSiteStatus.classList.remove('detected');
-    console.log('Special case handled:', tabStatus.hostname);
   }
 }
 
-// Setup event listeners
-function setupEventListeners() {
-  // Click outside to close popup
-  document.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON') {
-      e.stopPropagation();
-    }
-  });
-  
-  // Add refresh site button listener
-  const refreshSiteBtn = document.getElementById('refreshSiteBtn');
-  if (refreshSiteBtn) {
-    refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
-  }
-}
-
-// Update UI elements
+// Update UI based on configuration
 function updateUI() {
-  // Update status indicator
-  statusIndicator.className = `status ${config.enabled ? 'enabled' : 'disabled'}`;
-  statusText.textContent = config.enabled ? 'Enabled' : 'Disabled';
+  // Update status badge
+  if (config.enabled) {
+    statusDot.classList.remove('inactive');
+    statusText.textContent = 'Active';
+    toggleBtn.textContent = 'Disable';
+    toggleBtn.classList.remove('btn-primary');
+    toggleBtn.classList.add('btn-secondary');
+  } else {
+    statusDot.classList.add('inactive');
+    statusText.textContent = 'Inactive';
+    toggleBtn.textContent = 'Enable';
+    toggleBtn.classList.remove('btn-secondary');
+    toggleBtn.classList.add('btn-primary');
+  }
   
-  // Update toggle button
-  toggleBtn.textContent = config.enabled ? 'Disable' : 'Enable';
-  toggleBtn.className = config.enabled ? 'btn btn-secondary btn-full' : 'btn btn-full';
+  // Update delay time
+  delayTime.textContent = `${config.delaySec}s`;
   
-  // Update statistics
-  deletionsToday.textContent = config.usage?.deletionsToday || 0;
-  deletionsTotal.textContent = config.usage?.deletionsTotal || 0;
-  
-  // Update monitoring info
-  const totalDomains = (config.userDomains?.length || 0) + 20; // 20 preset domains
-  domainsCount.textContent = totalDomains;
-  delayTime.textContent = config.delaySec || 10;
+  // Show/hide pro section based on plan
+  if (config.plan === 'pro') {
+    proSection.style.display = 'block';
+  } else {
+    proSection.style.display = 'none';
+  }
 }
 
-// Refresh statistics from background
+// Refresh statistics
 async function refreshStats() {
   try {
-    const stats = await chrome.runtime.sendMessage({ action: 'getStats' });
-    if (stats) {
-      deletionsToday.textContent = stats.deletionsToday || 0;
-      deletionsTotal.textContent = stats.deletionsTotal || 0;
-      
-      // Update pending deletions
-      const queueCount = stats.queueSize || 0;
-      queueSize.textContent = queueCount;
-      pendingSection.style.display = queueCount > 0 ? 'block' : 'none';
-    }
+    await loadStats();
   } catch (error) {
     console.error('Failed to refresh stats:', error);
   }
 }
 
+// Setup event listeners
+function setupEventListeners() {
+  // Refresh site button
+  refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
+  
+  // Toggle extension
+  toggleBtn.addEventListener('click', toggleExtension);
+  
+  // Clear recent history
+  clearHistoryBtn.addEventListener('click', clearRecentHistory);
+  
+  // Settings button
+  settingsBtn.addEventListener('click', openSettings);
+  
+  // Upgrade button
+  upgradeBtn.addEventListener('click', openUpgrade);
+  
+  // Footer links
+  helpLink.addEventListener('click', openHelp);
+  feedbackLink.addEventListener('click', openFeedback);
+  privacyLink.addEventListener('click', openPrivacy);
+}
+
 // Toggle extension on/off
 async function toggleExtension() {
   try {
-    showLoading(true);
-    
     const newEnabled = !config.enabled;
-    const response = await chrome.runtime.sendMessage({
-      action: 'updateConfig',
-      config: { enabled: newEnabled }
+    
+    await chrome.runtime.sendMessage({ 
+      action: 'updateConfig', 
+      config: { enabled: newEnabled } 
     });
     
-    if (response.success) {
-      config.enabled = newEnabled;
-      updateUI();
-      showSuccess(`Extension ${newEnabled ? 'enabled' : 'disabled'}`);
-    } else {
-      throw new Error('Failed to update configuration');
-    }
+    config.enabled = newEnabled;
+    updateUI();
+    
+    console.log(`Extension ${newEnabled ? 'enabled' : 'disabled'}`);
+    
   } catch (error) {
     console.error('Failed to toggle extension:', error);
-    showError('Failed to toggle extension');
-  } finally {
-    showLoading(false);
+    showError('Failed to update extension status');
   }
 }
 
-// Delete recent history
-async function deleteRecentHistory(minutes) {
+// Clear recent history
+async function clearRecentHistory() {
   try {
-    showLoading(true);
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to clear recent browsing history? This action cannot be undone.')) {
+      return;
+    }
     
-    const response = await chrome.runtime.sendMessage({
-      action: 'deleteRecentHistory',
-      minutes: minutes
+    clearHistoryBtn.disabled = true;
+    clearHistoryBtn.textContent = 'Clearing...';
+    
+    await chrome.runtime.sendMessage({ 
+      action: 'deleteRecentHistory', 
+      minutes: 60 // Clear last hour
     });
     
-    if (response.success) {
-      showSuccess(`Deleted history from last ${minutes} minutes`);
-      // Refresh stats after deletion
-      setTimeout(refreshStats, 500);
-    } else {
-      throw new Error(response.error || 'Failed to delete history');
-    }
+    // Refresh stats
+    await loadStats();
+    
+    showSuccess('Recent history cleared successfully');
+    
   } catch (error) {
-    console.error('Failed to delete recent history:', error);
-    showError('Failed to delete history');
+    console.error('Failed to clear history:', error);
+    showError('Failed to clear history');
   } finally {
-    showLoading(false);
+    clearHistoryBtn.disabled = false;
+    clearHistoryBtn.textContent = 'Clear Recent';
   }
 }
 
-// Open options page
-function openOptions() {
+// Open settings page
+function openSettings() {
   chrome.runtime.openOptionsPage();
-  window.close();
 }
 
-// Show loading indicator
-function showLoading(show) {
-  loadingIndicator.style.display = show ? 'block' : 'none';
-  
-  // Disable buttons during loading
-  const buttons = document.querySelectorAll('button');
-  buttons.forEach(btn => {
-    btn.disabled = show;
-  });
+// Open upgrade page
+function openUpgrade() {
+  // Open upgrade page in new tab
+  chrome.tabs.create({ url: 'https://autopurge.com/upgrade' });
+}
+
+// Open help
+function openHelp() {
+  chrome.tabs.create({ url: 'https://autopurge.com/help' });
+}
+
+// Open feedback
+function openFeedback() {
+  chrome.tabs.create({ url: 'https://autopurge.com/feedback' });
+}
+
+// Open privacy
+function openPrivacy() {
+  chrome.tabs.create({ url: 'https://autopurge.com/privacy' });
 }
 
 // Show success message
 function showSuccess(message) {
-  hideMessages();
-  successMessage.textContent = message;
-  successMessage.style.display = 'block';
+  // Create temporary success message
+  const successDiv = document.createElement('div');
+  successDiv.className = 'alert alert-success';
+  successDiv.textContent = message;
   
+  // Insert after header
+  const header = document.querySelector('.header');
+  header.parentNode.insertBefore(successDiv, header.nextSibling);
+  
+  // Remove after 3 seconds
   setTimeout(() => {
-    successMessage.style.display = 'none';
+    successDiv.remove();
   }, 3000);
 }
 
 // Show error message
 function showError(message) {
-  hideMessages();
-  errorText.textContent = message;
-  errorMessage.style.display = 'block';
+  // Create temporary error message
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'alert alert-warning';
+  errorDiv.textContent = message;
   
+  // Insert after header
+  const header = document.querySelector('.header');
+  header.parentNode.insertBefore(errorDiv, header.nextSibling);
+  
+  // Remove after 5 seconds
   setTimeout(() => {
-    errorMessage.style.display = 'none';
+    errorDiv.remove();
   }, 5000);
 }
 
-// Hide all messages
-function hideMessages() {
-  successMessage.style.display = 'none';
-  errorMessage.style.display = 'none';
-}
-
-// Make functions available globally for onclick handlers
-window.toggleExtension = toggleExtension;
-window.deleteRecentHistory = deleteRecentHistory;
-window.openOptions = openOptions;
-window.refreshCurrentSite = loadCurrentTabStatus;
-
-// Handle keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    window.close();
-  } else if (e.key === 'Enter' && e.target.tagName !== 'INPUT') {
-    toggleExtension();
-  }
-});
-
-// Close popup when clicking outside (if in a popup window)
-document.addEventListener('click', (e) => {
-  if (e.target === document.body) {
-    window.close();
-  }
-});
+// Export functions for debugging
+window.popupDebug = {
+  loadData,
+  loadCurrentTabStatus,
+  loadStats,
+  toggleExtension,
+  clearRecentHistory,
+  config
+};
