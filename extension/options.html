@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoPurge Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>AutoPurge Settings</h1>
+      <p class="subtitle">Configure automatic history purging for specific domains</p>
+    </div>
+
+    <!-- Main Toggle -->
+    <div class="section">
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="enabledToggle" class="toggle-switch">
+          <span class="slider"></span>
+          Enable AutoPurge
+        </label>
+        <div class="status" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span id="statusText">Disabled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delay Settings -->
+    <div class="section">
+      <div class="section-title">Deletion Delay</div>
+      <div class="form-group">
+        <label for="delaySelect">Delete history after leaving page:</label>
+        <select id="delaySelect" class="form-control">
+          <option value="3">3 seconds</option>
+          <option value="10" selected>10 seconds</option>
+          <option value="30">30 seconds</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Preset Domains -->
+    <div class="section">
+      <div class="section-title">
+        Preset Domains
+        <span class="badge">READ ONLY</span>
+      </div>
+      <div class="alert alert-info">
+        These domains are pre-configured and cannot be modified. They cover common adult content sites.
+      </div>
+      <div class="domain-list" id="presetDomainsList">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Custom Domains -->
+    <div class="section">
+      <div class="section-title">
+        Custom Domains
+        <span class="badge" id="domainCounter">0/10</span>
+      </div>
+      
+      <div class="form-group">
+        <label for="newDomain">Add domain (e.g., example.com):</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="newDomain" class="form-control" placeholder="example.com" style="flex: 1;">
+          <button id="addDomainBtn" class="btn">Add</button>
+        </div>
+      </div>
+
+      <div class="domain-list" id="customDomainsList">
+        <!-- Populated by JavaScript -->
+      </div>
+
+          <!-- Upgrade prompt for free plan limits -->
+    <div id="upgradePrompt" class="upgrade-prompt" style="display: none;">
+      <h3>Upgrade to AutoPurge Pro</h3>
+      <p>You've reached the limit of 10 custom domains on the free plan.</p>
+      <button class="btn" onclick="showUpgradeModal()">Upgrade Now</button>
+    </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="section">
+      <div class="section-title">Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-value" id="deletionsToday">0</span>
+          <span class="stat-label">Today</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="deletionsTotal">0</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="section">
+      <div class="alert alert-info">
+        <strong>Privacy:</strong> This extension only stores domain names locally. No URLs, page titles, or browsing data are uploaded to any servers.
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="section">
+      <button id="saveBtn" class="btn btn-full">Save Settings</button>
+      <div id="saveStatus" class="alert alert-success" style="display: none;">
+        Settings saved successfully!
+      </div>
+    </div>
+  </div>
+
+  <!-- Upgrade Modal (placeholder) -->
+  <div id="upgradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; text-align: center;">
+      <h2>🚀 Upgrade to AutoPurge Pro</h2>
+      <p style="color: #666; margin-bottom: 20px;">Unlock unlimited privacy and advanced recovery features</p>
+      
+      <!-- Pricing Section -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">$4.99/month</div>
+        <div style="font-size: 14px; opacity: 0.9;">or $49.99/year (save 17%)</div>
+      </div>
+      
+      <!-- Features List -->
+      <div style="text-align: left; margin: 20px 0;">
+        <h4 style="color: #333; margin-bottom: 15px;">Pro Features Include:</h4>
+        <ul style="padding-left: 20px; line-height: 1.6;">
+          <li>✅ <strong>Unlimited custom domains</strong> - No more 10-domain limit</li>
+          <li>🔐 <strong>Shadow History</strong> - Encrypted backup of deleted records</li>
+          <li>📊 <strong>Advanced analytics</strong> - Detailed deletion statistics</li>
+          <li>🔄 <strong>Bulk operations</strong> - Import/export domain lists</li>
+          <li>⚡ <strong>Priority support</strong> - Direct access to development team</li>
+          <li>🔒 <strong>Enhanced security</strong> - PIN-protected recovery system</li>
+        </ul>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+        <button class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 24px; font-size: 16px;" onclick="startTrial()">
+          🎁 Start 7-Day Free Trial
+        </button>
+        <button class="btn btn-secondary" onclick="closeUpgradeModal()">Maybe Later</button>
+      </div>
+      
+      <!-- Trial Info -->
+      <div style="margin-top: 20px; font-size: 12px; color: #666;">
+        <p>✨ No credit card required for trial</p>
+        <p>🔄 Cancel anytime during trial period</p>
+        <p>🔒 All data remains private and local</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

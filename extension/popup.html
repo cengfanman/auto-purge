@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoPurge</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="header">
+      <h1>AutoPurge</h1>
+      <div class="status" id="statusIndicator">
+        <span class="status-dot"></span>
+        <span id="statusText">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Current Site Status -->
+    <div class="section" id="currentSiteSection">
+      <div class="current-site-status" id="currentSiteStatus">
+        <div class="site-info">
+          <div class="site-icon" id="siteIcon">🌐</div>
+          <div class="site-details">
+            <div class="site-name" id="siteName">检查当前网站...</div>
+            <div class="site-status" id="siteStatus">正在检测...</div>
+          </div>
+        </div>
+        <div class="detection-badge" id="detectionBadge" style="display: none;">
+          <span>●</span>
+          <span>已识别</span>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 8px;">
+        <button class="btn btn-small" id="refreshSiteBtn">刷新状态</button>
+      </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-value" id="deletionsToday">-</span>
+          <span class="stat-label">Today</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="deletionsTotal">-</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick History Cleanup -->
+    <div class="section">
+      <div class="section-title">Quick Cleanup</div>
+      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+        Delete recent browsing history (all sites)
+      </p>
+      
+      <div class="quick-actions">
+        <button class="btn btn-small" onclick="deleteRecentHistory(5)">
+          Last 5m
+        </button>
+        <button class="btn btn-small" onclick="deleteRecentHistory(15)">
+          Last 15m
+        </button>
+        <button class="btn btn-small" onclick="deleteRecentHistory(60)">
+          Last 1h
+        </button>
+      </div>
+    </div>
+
+    <!-- Current Status -->
+    <div class="section">
+      <div class="section-title">Active Monitoring</div>
+      <div id="monitoringInfo">
+        <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+          <span id="domainsCount">0</span> domains being monitored
+        </div>
+        <div style="font-size: 13px; color: #666;">
+          Deletion delay: <span id="delayTime">10</span> seconds
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Deletions -->
+    <div class="section" id="pendingSection" style="display: none;">
+      <div class="section-title">Pending Deletions</div>
+      <div id="pendingCount" style="font-size: 13px; color: #ff6666;">
+        <span id="queueSize">0</span> URLs scheduled for deletion
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="section">
+      <button id="toggleBtn" class="btn btn-full" onclick="toggleExtension()">
+        Enable
+      </button>
+      <button class="btn btn-secondary btn-full" onclick="openOptions()">
+        Settings
+      </button>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section" id="activitySection" style="display: none;">
+      <div class="section-title">Recent Activity</div>
+      <div id="recentActivity" style="font-size: 12px; color: #666;">
+        No recent deletions
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px;">
+      <div style="font-size: 14px; color: #666;">Processing...</div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="alert alert-success" style="display: none;">
+      History cleaned successfully!
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="alert alert-warning" style="display: none;">
+      <span id="errorText">An error occurred</span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
