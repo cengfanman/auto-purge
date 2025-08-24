@@ -321,6 +321,15 @@
       text-decoration: none;
     }
     
+    .domain-item.custom {
+      background: #f0f7fa;
+      color: #007bff;
+    }
+    
+    .domain-item.custom .domain-name {
+      font-weight: bold;
+    }
+    
     .remove-btn {
       background: #e74c3c;
       color: white;
@@ -640,18 +649,67 @@
             <h3><i>📋</i>Preset Domains</h3>
             <p style="margin-bottom: 15px; color: #7f8c8d;">Pre-configured domains for common privacy protection:</p>
             <div class="domain-list" id="presetDomainsList">
-              <!-- Will be populated by JavaScript -->
+              <!-- Static test domains - will be replaced by JavaScript -->
+              <div class="domain-item preset">
+                <span class="domain-name">google.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">facebook.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">youtube.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">twitter.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">instagram.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">linkedin.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">reddit.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">amazon.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">netflix.com</span>
+              </div>
+              <div class="domain-item preset">
+                <span class="domain-name">spotify.com</span>
+              </div>
+            </div>
+            <!-- Debug buttons -->
+            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+              <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
+              <button class="btn btn-secondary" onclick="console.log('Preset domains:', window.optionsDebug.presetDomains)">Log Preset Domains</button>
+              <button class="btn btn-secondary" onclick="window.optionsDebug.loadData()">Reload Data</button>
+              <button class="btn btn-secondary" onclick="window.optionsDebug.testAddDomain()">Test Add Domain</button>
+              <button class="btn btn-secondary" onclick="window.optionsDebug.testRemoveDomain()">Test Remove Domain</button>
+              <button class="btn btn-primary" onclick="forceRefreshDomains()">Force Refresh</button>
             </div>
           </div>
           
           <div class="section-card">
             <h3><i>➕</i>Custom Domains</h3>
             <div class="domain-list" id="customDomainsList">
-              <!-- Will be populated by JavaScript -->
+              <!-- Example custom domain - will be replaced by JavaScript -->
+              <div class="domain-item custom">
+                <span class="domain-name">example.com</span>
+                <button class="remove-btn">×</button>
+              </div>
             </div>
             <div class="add-domain">
               <input type="text" id="newDomainInput" class="form-control" placeholder="Enter domain (e.g., example.com)">
               <button class="btn btn-success" id="addDomainBtn">Add Domain</button>
+            </div>
+            <!-- Debug buttons -->
+            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+              <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
+              <button class="btn btn-secondary" onclick="console.log('Custom domains:', window.optionsDebug.config.userDomains)">Log Custom Domains</button>
+              <button class="btn btn-secondary" onclick="window.optionsDebug.updateDomainLists()">Refresh Lists</button>
             </div>
           </div>
         </div>

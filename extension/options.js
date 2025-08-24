@@ -27,28 +27,59 @@ function setupNavigation() {
   });
 }
 
-// DOM elements
-const userName = document.getElementById('userName');
-const userEmail = document.getElementById('userEmail');
-const planBadge = document.getElementById('planBadge');
-const signInBtn = document.getElementById('signInBtn');
-const signUpBtn = document.getElementById('signUpBtn');
-const upgradeBtn = document.getElementById('upgradeBtn');
-const enabledToggle = document.getElementById('enabledToggle');
-const delayInput = document.getElementById('delayInput');
-const freeLimitInput = document.getElementById('freeLimitInput');
-const shadowHistoryToggle = document.getElementById('shadowHistoryToggle');
-const analyticsToggle = document.getElementById('analyticsToggle');
-const prioritySupportToggle = document.getElementById('prioritySupportToggle');
-const presetDomainsList = document.getElementById('presetDomainsList');
-const customDomainsList = document.getElementById('customDomainsList');
-const newDomainInput = document.getElementById('newDomainInput');
-const addDomainBtn = document.getElementById('addDomainBtn');
-const subscribeBtn = document.getElementById('subscribeBtn');
-const saveBtn = document.getElementById('saveBtn');
-const resetBtn = document.getElementById('resetBtn');
-const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
+// DOM elements - 初始化为 null，稍后获取
+let userName = null;
+let userEmail = null;
+let planBadge = null;
+let signInBtn = null;
+let signUpBtn = null;
+let upgradeBtn = null;
+let enabledToggle = null;
+let delayInput = null;
+let freeLimitInput = null;
+let shadowHistoryToggle = null;
+let analyticsToggle = null;
+let prioritySupportToggle = null;
+let presetDomainsList = null;
+let customDomainsList = null;
+let newDomainInput = null;
+let addDomainBtn = null;
+let subscribeBtn = null;
+let saveBtn = null;
+let resetBtn = null;
+let exportBtn = null;
+let importBtn = null;
+
+// 获取 DOM 元素的函数
+function getDOMElements() {
+  userName = document.getElementById('userName');
+  userEmail = document.getElementById('userEmail');
+  planBadge = document.getElementById('planBadge');
+  signInBtn = document.getElementById('signInBtn');
+  signUpBtn = document.getElementById('signUpBtn');
+  upgradeBtn = document.getElementById('upgradeBtn');
+  enabledToggle = document.getElementById('enabledToggle');
+  delayInput = document.getElementById('delayInput');
+  freeLimitInput = document.getElementById('freeLimitInput');
+  shadowHistoryToggle = document.getElementById('shadowHistoryToggle');
+  analyticsToggle = document.getElementById('analyticsToggle');
+  prioritySupportToggle = document.getElementById('prioritySupportToggle');
+  presetDomainsList = document.getElementById('presetDomainsList');
+  customDomainsList = document.getElementById('customDomainsList');
+  newDomainInput = document.getElementById('newDomainInput');
+  addDomainBtn = document.getElementById('addDomainBtn');
+  subscribeBtn = document.getElementById('subscribeBtn');
+  saveBtn = document.getElementById('saveBtn');
+  resetBtn = document.getElementById('resetBtn');
+  exportBtn = document.getElementById('exportBtn');
+  importBtn = document.getElementById('importBtn');
+  
+  console.log('DOM elements found:');
+  console.log('presetDomainsList:', presetDomainsList);
+  console.log('customDomainsList:', customDomainsList);
+  console.log('newDomainInput:', newDomainInput);
+  console.log('addDomainBtn:', addDomainBtn);
+}
 
 // Current configuration
 let config = {};
@@ -58,10 +89,23 @@ let user = null;
 // Initialize options page
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Options page initialized');
-  setupNavigation(); // Setup navigation first
+  
+  // 首先获取 DOM 元素
+  getDOMElements();
+  
+  // 设置导航
+  setupNavigation();
+  
+  // 加载数据
   await loadData();
+  
+  // 设置事件监听器
   setupEventListeners();
+  
+  // 更新 UI
   updateUI();
+  
+  console.log('Initialization complete');
 });
 
 // Load configuration and data
@@ -70,46 +114,121 @@ async function loadData() {
     console.log('Loading options data...');
     
     // Get configuration
-    config = await chrome.runtime.sendMessage({ action: 'getConfig' });
-    
-    if (!config) {
-      throw new Error('Failed to load configuration');
+    try {
+      config = await chrome.runtime.sendMessage({ action: 'getConfig' });
+      console.log('Config loaded from chrome.runtime:', config);
+    } catch (chromeError) {
+      console.warn('Chrome runtime message failed, using default config:', chromeError);
+      config = null;
     }
     
-    // Load preset domains
+    if (!config) {
+      console.log('Using default configuration');
+      // Set default config
+      config = {
+        enabled: false,
+        delaySec: 10,
+        freeLimit: 10,
+        userDomains: [],
+        plan: 'free',
+        usage: { deletionsToday: 0, deletionsTotal: 0 }
+      };
+    }
+    
+    // Load preset domains - 确保这个总是被调用
+    console.log('Loading preset domains...');
     await loadPresetDomains();
     
     // Load user data
     await loadUserData();
     
-    console.log('Options data loaded:', { config, presetDomains, user });
+    console.log('Options data loaded successfully:', { config, presetDomains, user });
     
   } catch (error) {
     console.error('Failed to load options data:', error);
     showError('Failed to load extension data');
     
-    // Set default config
-    config = {
-      enabled: false,
-      delaySec: 10,
-      freeLimit: 10,
-      userDomains: [],
-      plan: 'free',
-      usage: { deletionsToday: 0, deletionsTotal: 0 }
-    };
+    // 即使出错也要设置默认配置
+    if (!config) {
+      config = {
+        enabled: false,
+        delaySec: 10,
+        freeLimit: 10,
+        userDomains: [],
+        plan: 'free',
+        usage: { deletionsToday: 0, deletionsTotal: 0 }
+      };
+    }
+    
+    // 确保预设域名被加载
+    if (!presetDomains || presetDomains.length === 0) {
+      console.log('Loading preset domains after error...');
+      await loadPresetDomains();
+    }
   }
 }
 
 // Load preset domains
 async function loadPresetDomains() {
   try {
+    console.log('Loading preset domains...');
     const response = await fetch(chrome.runtime.getURL('data/preset-domains.json'));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const data = await response.json();
     presetDomains = data.domains || [];
-    console.log(`Loaded ${presetDomains.length} preset domains`);
+    console.log(`Loaded ${presetDomains.length} preset domains from JSON file`);
+    
   } catch (error) {
-    console.error('Failed to load preset domains:', error);
+    console.error('Failed to load preset domains from JSON file:', error);
+    console.log('Using fallback preset domains...');
+    
+    // 备用预设域名列表
+    presetDomains = [
+      "google.com",
+      "facebook.com", 
+      "youtube.com",
+      "twitter.com",
+      "instagram.com",
+      "linkedin.com",
+      "reddit.com",
+      "amazon.com",
+      "netflix.com",
+      "spotify.com"
+    ];
+    
+    console.log(`Using ${presetDomains.length} fallback preset domains`);
+  }
+  
+  // 确保 presetDomains 是数组
+  if (!Array.isArray(presetDomains)) {
+    console.warn('Preset domains is not an array, converting...');
     presetDomains = [];
+  }
+  
+  // 如果没有域名，强制添加一些测试域名
+  if (presetDomains.length === 0) {
+    console.log('No preset domains found, adding test domains...');
+    presetDomains = [
+      "test1.com",
+      "test2.com", 
+      "test3.com",
+      "test4.com",
+      "test5.com"
+    ];
+  }
+  
+  console.log('Final preset domains:', presetDomains);
+  
+  // 立即尝试更新域名列表（如果 DOM 已经准备好）
+  if (presetDomainsList) {
+    console.log('DOM ready, updating domain lists immediately');
+    updateDomainLists();
+  } else {
+    console.log('DOM not ready yet, will update later');
   }
 }
 
@@ -132,105 +251,159 @@ async function loadUserData() {
 
 // Setup event listeners
 function setupEventListeners() {
+  console.log('Setting up event listeners...');
+  
   // User management
-  signInBtn.addEventListener('click', showSignInModal);
-  signUpBtn.addEventListener('click', showSignUpModal);
-  upgradeBtn.addEventListener('click', showUpgradeModal);
+  if (signInBtn) signInBtn.addEventListener('click', showSignInModal);
+  if (signUpBtn) signUpBtn.addEventListener('click', showSignUpModal);
+  if (upgradeBtn) upgradeBtn.addEventListener('click', showUpgradeModal);
   
   // Settings toggles
-  enabledToggle.addEventListener('change', updateConfig);
-  delayInput.addEventListener('change', updateConfig);
-  freeLimitInput.addEventListener('change', updateConfig);
+  if (enabledToggle) enabledToggle.addEventListener('change', updateConfig);
+  if (delayInput) delayInput.addEventListener('change', updateConfig);
+  if (freeLimitInput) freeLimitInput.addEventListener('change', updateConfig);
   
   // Pro feature toggles
-  shadowHistoryToggle.addEventListener('change', updateProFeatures);
-  analyticsToggle.addEventListener('change', updateProFeatures);
-  prioritySupportToggle.addEventListener('change', updateProFeatures);
+  if (shadowHistoryToggle) shadowHistoryToggle.addEventListener('change', updateProFeatures);
+  if (analyticsToggle) analyticsToggle.addEventListener('change', updateProFeatures);
+  if (prioritySupportToggle) prioritySupportToggle.addEventListener('change', updateProFeatures);
   
   // Domain management
-  addDomainBtn.addEventListener('click', addCustomDomain);
-  newDomainInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') addCustomDomain();
-  });
+  if (addDomainBtn) addDomainBtn.addEventListener('click', addCustomDomain);
+  if (newDomainInput) {
+    newDomainInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addCustomDomain();
+    });
+  }
   
   // Payment
-  subscribeBtn.addEventListener('click', processSubscription);
+  if (subscribeBtn) subscribeBtn.addEventListener('click', processSubscription);
   
   // Save/Reset
-  saveBtn.addEventListener('click', saveSettings);
-  resetBtn.addEventListener('click', resetToDefaults);
-  exportBtn.addEventListener('click', exportSettings);
-  importBtn.addEventListener('click', importSettings);
+  if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+  if (resetBtn) resetBtn.addEventListener('click', resetToDefaults);
+  if (exportBtn) exportBtn.addEventListener('click', exportSettings);
+  if (importBtn) importBtn.addEventListener('click', importSettings);
   
   // Payment method selection
   document.querySelectorAll('.payment-method').forEach(method => {
     method.addEventListener('click', () => selectPaymentMethod(method));
   });
+  
+  console.log('Event listeners setup complete');
 }
 
 // Update UI based on configuration
 function updateUI() {
+  console.log('Updating UI...');
+  
   // Update toggles
-  enabledToggle.checked = config.enabled;
-  delayInput.value = config.delaySec;
-  freeLimitInput.value = config.freeLimit;
+  if (enabledToggle) enabledToggle.checked = config.enabled;
+  if (delayInput) delayInput.value = config.delaySec;
+  if (freeLimitInput) freeLimitInput.value = config.freeLimit;
   
   // Update pro features
-  shadowHistoryToggle.checked = config.plan === 'pro' && config.shadowHistory;
-  analyticsToggle.checked = config.plan === 'pro' && config.analytics;
-  prioritySupportToggle.checked = config.plan === 'pro' && config.prioritySupport;
+  if (shadowHistoryToggle) shadowHistoryToggle.checked = config.plan === 'pro' && config.shadowHistory;
+  if (analyticsToggle) analyticsToggle.checked = config.plan === 'pro' && config.analytics;
+  if (prioritySupportToggle) prioritySupportToggle.checked = config.plan === 'pro' && config.prioritySupport;
   
   // Disable pro features if not pro plan
   const proFeatures = [shadowHistoryToggle, analyticsToggle, prioritySupportToggle];
   proFeatures.forEach(toggle => {
-    toggle.disabled = config.plan !== 'pro';
+    if (toggle) {
+      toggle.disabled = config.plan !== 'pro';
+    }
   });
   
   // Update user interface
   updateUserInterface();
   
-  // Update domain lists
+  // Update domain lists - 确保域名列表被更新
   updateDomainLists();
+  
+  // 添加调试信息
+  console.log('UI updated, preset domains:', presetDomains);
+  console.log('UI updated, custom domains:', config.userDomains);
+  
+  console.log('UI update complete');
 }
 
 // Update user interface
 function updateUserInterface() {
+  console.log('Updating user interface...');
+  
   if (user) {
-    userName.textContent = user.name || 'User';
-    userEmail.textContent = user.email;
-    planBadge.textContent = user.plan || 'Free';
-    planBadge.className = `plan-badge ${user.plan === 'pro' ? 'pro' : ''}`;
+    if (userName) userName.textContent = user.name || 'User';
+    if (userEmail) userEmail.textContent = user.email;
+    if (planBadge) {
+      planBadge.textContent = user.plan || 'Free';
+      planBadge.className = `plan-badge ${user.plan === 'pro' ? 'pro' : ''}`;
+    }
     
-    signInBtn.style.display = 'none';
-    signUpBtn.style.display = 'none';
-    upgradeBtn.style.display = user.plan !== 'pro' ? 'block' : 'none';
+    if (signInBtn) signInBtn.style.display = 'none';
+    if (signUpBtn) signUpBtn.style.display = 'none';
+    if (upgradeBtn) upgradeBtn.style.display = user.plan !== 'pro' ? 'block' : 'none';
   } else {
-    userName.textContent = 'Guest User';
-    userEmail.textContent = 'Not signed in';
-    planBadge.textContent = 'Free';
-    planBadge.className = 'plan-badge';
+    if (userName) userName.textContent = 'Guest User';
+    if (userEmail) userEmail.textContent = 'Not signed in';
+    if (planBadge) {
+      planBadge.textContent = 'Free';
+      planBadge.className = 'plan-badge';
+    }
     
-    signInBtn.style.display = 'block';
-    signUpBtn.style.display = 'block';
-    upgradeBtn.style.display = 'none';
+    if (signInBtn) signInBtn.style.display = 'block';
+    if (signUpBtn) signUpBtn.style.display = 'block';
+    if (upgradeBtn) upgradeBtn.style.display = 'none';
   }
+  
+  console.log('User interface update complete');
 }
 
 // Update domain lists
 function updateDomainLists() {
+  console.log('Updating domain lists...');
+  console.log('Preset domains:', presetDomains);
+  console.log('Custom domains:', config.userDomains);
+  
   // Update preset domains
-  presetDomainsList.innerHTML = '';
-  presetDomains.forEach(domain => {
-    const domainItem = createDomainItem(domain, 'preset');
-    presetDomainsList.appendChild(domainItem);
-  });
+  if (presetDomainsList) {
+    console.log('Preset domains list element found:', presetDomainsList);
+    
+    // 只有当有预设域名时才清空并重新填充
+    if (presetDomains && presetDomains.length > 0) {
+      presetDomainsList.innerHTML = '';
+      presetDomains.forEach(domain => {
+        const domainItem = createDomainItem(domain, 'preset');
+        presetDomainsList.appendChild(domainItem);
+        console.log('Added preset domain:', domain);
+      });
+    } else {
+      console.log('No preset domains to display, keeping static content');
+    }
+  } else {
+    console.error('Preset domains list element not found!');
+  }
   
   // Update custom domains
-  customDomainsList.innerHTML = '';
-  (config.userDomains || []).forEach(domain => {
-    const domainItem = createDomainItem(domain, 'custom');
-    customDomainsList.appendChild(domainItem);
-  });
+  if (customDomainsList) {
+    console.log('Custom domains list element found:', customDomainsList);
+    
+    // 只有当有自定义域名时才清空并重新填充
+    if (config.userDomains && config.userDomains.length > 0) {
+      customDomainsList.innerHTML = '';
+      config.userDomains.forEach(domain => {
+        const domainItem = createDomainItem(domain, 'custom');
+        customDomainsList.appendChild(domainItem);
+        console.log('Added custom domain:', domain);
+      });
+    } else {
+      console.log('No custom domains to display, keeping static content');
+    }
+  } else {
+    console.error('Custom domains list element not found!');
+  }
+  
+  console.log('Domain lists update complete');
 }
 
 // Create domain item element
@@ -258,6 +431,8 @@ function createDomainItem(domain, type) {
 // Add custom domain
 async function addCustomDomain() {
   const domain = newDomainInput.value.trim().toLowerCase();
+  
+  console.log('Adding custom domain:', domain);
   
   if (!domain) {
     showError('Please enter a domain name');
@@ -287,11 +462,19 @@ async function addCustomDomain() {
     if (!config.userDomains) config.userDomains = [];
     config.userDomains.push(domain);
     
-    // Update configuration
-    await chrome.runtime.sendMessage({ 
-      action: 'updateConfig', 
-      config: { userDomains: config.userDomains } 
-    });
+    console.log('Domain added to config, new userDomains:', config.userDomains);
+    
+    // Try to update configuration via chrome.runtime.sendMessage
+    try {
+      await chrome.runtime.sendMessage({ 
+        action: 'updateConfig', 
+        config: { userDomains: config.userDomains } 
+      });
+      console.log('Configuration updated via chrome.runtime.sendMessage');
+    } catch (chromeError) {
+      console.warn('Chrome runtime message failed, continuing with local update:', chromeError);
+      // 如果 chrome.runtime.sendMessage 失败，我们仍然可以继续本地更新
+    }
     
     // Update UI
     updateDomainLists();
@@ -307,15 +490,25 @@ async function addCustomDomain() {
 
 // Remove custom domain
 async function removeCustomDomain(domain) {
+  console.log('Removing custom domain:', domain);
+  
   try {
     // Remove domain from config
     config.userDomains = config.userDomains.filter(d => d !== domain);
     
-    // Update configuration
-    await chrome.runtime.sendMessage({ 
-      action: 'updateConfig', 
-      config: { userDomains: config.userDomains } 
-    });
+    console.log('Domain removed from config, new userDomains:', config.userDomains);
+    
+    // Try to update configuration via chrome.runtime.sendMessage
+    try {
+      await chrome.runtime.sendMessage({ 
+        action: 'updateConfig', 
+        config: { userDomains: config.userDomains } 
+      });
+      console.log('Configuration updated via chrome.runtime.sendMessage');
+    } catch (chromeError) {
+      console.warn('Chrome runtime message failed, continuing with local update:', chromeError);
+      // 如果 chrome.runtime.sendMessage 失败，我们仍然可以继续本地更新
+    }
     
     // Update UI
     updateDomainLists();
@@ -639,13 +832,50 @@ function showMessage(message, type) {
   messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'warning'}`;
   messageDiv.textContent = message;
   
-  // Insert at top of container
-  const container = document.querySelector('.options-container');
-  container.insertBefore(messageDiv, container.firstChild);
+  // 添加样式
+  messageDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    z-index: 10000;
+    max-width: 300px;
+    word-wrap: break-word;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+  `;
   
-  // Remove after delay
+  // 根据类型设置背景色
+  if (type === 'success') {
+    messageDiv.style.background = '#27ae60';
+  } else {
+    messageDiv.style.background = '#e74c3c';
+  }
+  
+  // 添加到页面
+  document.body.appendChild(messageDiv);
+  
+  // 添加动画样式
+  if (!document.getElementById('message-styles')) {
+    const style = document.createElement('style');
+    style.id = 'message-styles';
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // 移除消息
   setTimeout(() => {
-    messageDiv.remove();
+    if (messageDiv.parentNode) {
+      messageDiv.parentNode.removeChild(messageDiv);
+    }
   }, type === 'success' ? 3000 : 5000);
 }
 
@@ -657,5 +887,36 @@ window.optionsDebug = {
   loadData,
   updateConfig,
   addCustomDomain,
-  removeCustomDomain
+  removeCustomDomain,
+  updateDomainLists,
+  loadPresetDomains,
+  // 添加测试函数
+  testAddDomain: () => {
+    const testDomain = 'test' + Date.now() + '.com';
+    console.log('Testing add domain with:', testDomain);
+    if (window.optionsDebug.config.userDomains) {
+      window.optionsDebug.config.userDomains.push(testDomain);
+      window.optionsDebug.updateDomainLists();
+      console.log('Test domain added:', testDomain);
+    }
+  },
+  testRemoveDomain: () => {
+    if (window.optionsDebug.config.userDomains && window.optionsDebug.config.userDomains.length > 0) {
+      const removedDomain = window.optionsDebug.config.userDomains.pop();
+      window.optionsDebug.updateDomainLists();
+      console.log('Test domain removed:', removedDomain);
+    }
+  },
+  forceRefreshDomains: () => {
+    console.log('Force refreshing domains...');
+    console.log('Current preset domains:', presetDomains);
+    console.log('Current custom domains:', config.userDomains);
+    updateDomainLists();
+    console.log('Force refresh complete');
+  }
+};
+
+// 全局函数，方便从 HTML 调用
+window.forceRefreshDomains = () => {
+  window.optionsDebug.forceRefreshDomains();
 };
