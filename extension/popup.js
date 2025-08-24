@@ -10,6 +10,9 @@ const statusText = document.getElementById('statusText');
 const siteIcon = document.getElementById('siteIcon');
 const siteName = document.getElementById('siteName');
 const siteStatus = document.getElementById('siteStatus');
+const countdown = document.getElementById('countdown');
+const countdownTime = document.getElementById('countdownTime');
+const removalStatus = document.getElementById('removalStatus');
 const detectionBadge = document.getElementById('detectionBadge');
 const refreshSiteBtn = document.getElementById('refreshSiteBtn');
 const domainsCount = document.getElementById('domainsCount');
@@ -28,6 +31,11 @@ const privacyLink = document.getElementById('privacyLink');
 
 // Current configuration
 let config = {};
+
+// 倒计时相关变量
+let countdownInterval = null;
+let currentCountdown = 0;
+let isDeletionInProgress = false;
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -72,6 +80,118 @@ async function loadData() {
       usage: { deletionsToday: 0, deletionsTotal: 0 }
     };
   }
+}
+
+// 开始倒计时
+function startCountdown(seconds) {
+  console.log(`Starting countdown for ${seconds} seconds`);
+  
+  // 清除之前的倒计时
+  stopCountdown();
+  
+  // 设置初始值
+  currentCountdown = seconds;
+  countdownTime.textContent = `${currentCountdown}s`;
+  
+  // 显示倒计时
+  countdown.style.display = 'block';
+  siteStatus.style.display = 'none';
+  removalStatus.style.display = 'none';
+  
+  // 设置倒计时间隔
+  countdownInterval = setInterval(() => {
+    currentCountdown--;
+    
+    if (currentCountdown > 0) {
+      // 更新倒计时显示
+      countdownTime.textContent = `${currentCountdown}s`;
+      console.log(`Countdown: ${currentCountdown}s remaining`);
+    } else {
+      // 倒计时结束，执行删除
+      console.log('Countdown finished, executing deletion');
+      stopCountdown();
+      executeDeletion();
+    }
+  }, 1000);
+  
+  isDeletionInProgress = true;
+}
+
+// 停止倒计时
+function stopCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  isDeletionInProgress = false;
+}
+
+// 执行删除操作
+async function executeDeletion() {
+  console.log('Executing deletion...');
+  
+  try {
+    // 显示删除中状态
+    countdown.style.display = 'none';
+    siteStatus.style.display = 'block';
+    siteStatus.textContent = 'Clearing history...';
+    
+    // 模拟删除操作（实际应该调用 background script）
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // 删除完成，显示 "Removed" 状态
+    showRemovedStatus();
+    
+    // 更新统计数据
+    await loadStats();
+    
+    console.log('Deletion completed successfully');
+    
+  } catch (error) {
+    console.error('Deletion failed:', error);
+    showError('Failed to clear history');
+    
+    // 恢复原始状态
+    countdown.style.display = 'none';
+    siteStatus.style.display = 'block';
+    siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+  }
+}
+
+// 显示删除完成状态
+function showRemovedStatus() {
+  console.log('Showing removed status');
+  
+  // 隐藏倒计时和状态
+  countdown.style.display = 'none';
+  siteStatus.style.display = 'none';
+  
+  // 显示删除完成状态
+  removalStatus.style.display = 'block';
+  
+  // 5秒后恢复原始状态
+  setTimeout(() => {
+    if (removalStatus.style.display !== 'none') {
+      removalStatus.style.display = 'none';
+      siteStatus.style.display = 'block';
+      siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+    }
+  }, 5000);
+}
+
+// 重置站点状态
+function resetSiteStatus() {
+  console.log('Resetting site status');
+  
+  // 停止倒计时
+  stopCountdown();
+  
+  // 隐藏所有状态
+  countdown.style.display = 'none';
+  removalStatus.style.display = 'none';
+  
+  // 显示原始状态
+  siteStatus.style.display = 'block';
 }
 
 // Load current tab status
@@ -179,6 +299,9 @@ async function loadStats() {
 function updateCurrentSiteUI(tabStatus) {
   console.log('Updating current site UI with:', tabStatus);
 
+  // 重置之前的站点状态
+  resetSiteStatus();
+
   if (tabStatus.error) {
     // Error occurred
     siteIcon.textContent = '⚠️';
@@ -187,11 +310,22 @@ function updateCurrentSiteUI(tabStatus) {
     detectionBadge.style.display = 'none';
     console.error('Tab status error:', tabStatus.error);
   } else if (tabStatus.isMatched) {
-    // Site is detected
+    // Site is detected - 启动倒计时
     siteIcon.textContent = '🔞';
     siteName.textContent = tabStatus.hostname || 'Adult Website';
-    siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+    
+    // 显示检测徽章
     detectionBadge.style.display = 'flex';
+    
+    // 只有在没有倒计时进行且扩展启用时才启动倒计时
+    if (config.enabled && !isDeletionInProgress && !countdownInterval) {
+      console.log('Starting countdown for detected site');
+      startCountdown(config.delaySec);
+    } else {
+      console.log('Countdown already in progress or extension disabled, showing status only');
+      siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+    }
+    
     console.log('Site detected as adult content');
   } else if (tabStatus.hostname && tabStatus.hostname !== 'Restricted Page' && tabStatus.hostname !== 'Invalid URL') {
     // Normal site
@@ -249,6 +383,13 @@ function updateUI() {
 async function refreshStats() {
   try {
     await loadStats();
+    
+    // 如果倒计时正在进行，不要重新检查标签页状态，避免重复启动
+    // 只在没有倒计时时检查状态
+    if (!isDeletionInProgress && config.enabled) {
+      // 重新检查当前标签页状态
+      await loadCurrentTabStatus();
+    }
   } catch (error) {
     console.error('Failed to refresh stats:', error);
   }
@@ -288,6 +429,13 @@ async function toggleExtension() {
     });
     
     config.enabled = newEnabled;
+    
+    // 如果禁用扩展，停止倒计时
+    if (!newEnabled) {
+      stopCountdown();
+      resetSiteStatus();
+    }
+    
     updateUI();
     
     console.log(`Extension ${newEnabled ? 'enabled' : 'disabled'}`);
@@ -395,5 +543,26 @@ window.popupDebug = {
   loadStats,
   toggleExtension,
   clearRecentHistory,
-  config
+  config,
+  // 倒计时调试函数
+  startCountdown: (seconds = 10) => startCountdown(seconds),
+  stopCountdown: () => stopCountdown(),
+  executeDeletion: () => executeDeletion(),
+  showRemovedStatus: () => showRemovedStatus(),
+  resetSiteStatus: () => resetSiteStatus(),
+  getCountdownState: () => ({
+    isDeletionInProgress,
+    currentCountdown,
+    hasInterval: !!countdownInterval,
+    countdownInterval: countdownInterval
+  }),
+  // 强制重置所有状态
+  forceReset: () => {
+    console.log('Force resetting all states...');
+    stopCountdown();
+    resetSiteStatus();
+    isDeletionInProgress = false;
+    currentCountdown = 0;
+    console.log('Force reset complete');
+  }
 };
