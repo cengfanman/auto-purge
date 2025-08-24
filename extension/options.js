@@ -3,6 +3,30 @@
  * Handles settings, user management, and payment processing
  */
 
+// Navigation functionality for left-right layout
+function setupNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  const contentSections = document.querySelectorAll('.content-section');
+  
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const targetSection = item.dataset.section;
+      
+      // Update active nav item
+      navItems.forEach(nav => nav.classList.remove('active'));
+      item.classList.add('active');
+      
+      // Show target section
+      contentSections.forEach(section => {
+        section.classList.remove('active');
+        if (section.id === targetSection) {
+          section.classList.add('active');
+        }
+      });
+    });
+  });
+}
+
 // DOM elements
 const userName = document.getElementById('userName');
 const userEmail = document.getElementById('userEmail');
@@ -34,6 +58,7 @@ let user = null;
 // Initialize options page
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Options page initialized');
+  setupNavigation(); // Setup navigation first
   await loadData();
   setupEventListeners();
   updateUI();

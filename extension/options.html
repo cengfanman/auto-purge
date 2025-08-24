@@ -14,86 +14,188 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f5f5f5;
-      padding: 20px;
-    }
-    
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      height: 100vh;
       overflow: hidden;
     }
     
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Main Layout Container */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      background: #f5f5f5;
+    }
+    
+    /* Left Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      background: #2c3e50;
       color: white;
-      padding: 30px;
+      overflow-y: auto;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    
+    .sidebar-header {
+      padding: 25px 20px;
+      background: #34495e;
+      border-bottom: 1px solid #4a5f7a;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .sidebar-header p {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+    
+    .nav-menu {
+      padding: 20px 0;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover {
+      background: #34495e;
+      border-left-color: #3498db;
+    }
+    
+    .nav-item.active {
+      background: #3498db;
+      border-left-color: #2980b9;
+    }
+    
+    .nav-item i {
+      margin-right: 12px;
+      font-size: 16px;
+      width: 20px;
       text-align: center;
     }
     
-    .header h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
+    .nav-item span {
+      font-size: 14px;
+      font-weight: 500;
     }
     
-    .header p {
-      opacity: 0.9;
+    .nav-divider {
+      height: 1px;
+      background: #4a5f7a;
+      margin: 15px 20px;
     }
     
-    .content {
-      padding: 20px;
+    /* Right Content Area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      background: white;
     }
     
-    .section {
-      margin-bottom: 20px;
-      padding: 15px;
+    .content-header {
+      padding: 25px 30px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .content-header h2 {
+      font-size: 24px;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .content-header p {
+      color: #7f8c8d;
+      font-size: 14px;
+    }
+    
+    .content-body {
+      padding: 30px;
+    }
+    
+    /* Content Sections */
+    .content-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .content-section.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .section-card {
+      background: white;
       border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      background: #fafafa;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
-    .section h2 {
-      color: #333;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #667eea;
+    .section-card h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
       font-size: 18px;
+      display: flex;
+      align-items: center;
     }
     
+    .section-card h3 i {
+      margin-right: 10px;
+      color: #3498db;
+    }
+    
+    /* Form Controls */
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
     
     .form-group label {
       display: block;
       font-weight: 500;
-      margin-bottom: 6px;
-      color: #555;
+      margin-bottom: 8px;
+      color: #34495e;
       font-size: 14px;
     }
     
     .form-control {
       width: 100%;
-      padding: 8px 10px;
+      padding: 10px 12px;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 14px;
+      transition: all 0.2s ease;
     }
     
     .form-control:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
     }
     
+    /* Toggle Switch */
     .toggle-switch {
       position: relative;
       display: inline-block;
       width: 50px;
       height: 24px;
-      margin-right: 10px;
+      margin-right: 12px;
     }
     
     .toggle-switch input {
@@ -127,69 +229,82 @@
     }
     
     input:checked + .slider {
-      background-color: #667eea;
+      background-color: #3498db;
     }
     
     input:checked + .slider:before {
       transform: translateX(26px);
     }
     
+    /* Buttons */
     .btn {
       display: inline-block;
-      padding: 8px 16px;
-      margin: 3px;
+      padding: 10px 18px;
+      margin: 5px;
       border: none;
-      border-radius: 4px;
-      font-size: 13px;
+      border-radius: 6px;
+      font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
     }
     
     .btn-primary {
-      background: #667eea;
+      background: #3498db;
       color: white;
     }
     
     .btn-primary:hover {
-      background: #5a6fd8;
+      background: #2980b9;
+      transform: translateY(-1px);
     }
     
     .btn-secondary {
-      background: #6c757d;
+      background: #95a5a6;
       color: white;
     }
     
     .btn-secondary:hover {
-      background: #5a6268;
+      background: #7f8c8d;
     }
     
-    .btn-pro {
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #229954;
+    }
+    
+    .btn-warning {
       background: #f39c12;
       color: white;
     }
     
-    .btn-pro:hover {
+    .btn-warning:hover {
       background: #e67e22;
     }
     
+    /* Domain Management */
     .domain-list {
-      max-height: 120px;
+      max-height: 200px;
       overflow-y: auto;
       border: 1px solid #ddd;
-      border-radius: 4px;
-      background: white;
-      margin-bottom: 10px;
+      border-radius: 6px;
+      background: #f8f9fa;
+      margin-bottom: 15px;
     }
     
     .domain-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 12px;
+      padding: 10px 15px;
       border-bottom: 1px solid #eee;
       font-size: 13px;
+      background: white;
     }
     
     .domain-item:last-child {
@@ -206,27 +321,23 @@
       text-decoration: none;
     }
     
-    .domain-item.preset a:hover {
-      text-decoration: underline;
-    }
-    
     .remove-btn {
-      background: #dc3545;
+      background: #e74c3c;
       color: white;
       border: none;
-      padding: 3px 6px;
-      border-radius: 3px;
+      padding: 4px 8px;
+      border-radius: 4px;
       cursor: pointer;
       font-size: 11px;
     }
     
     .remove-btn:hover {
-      background: #c82333;
+      background: #c0392b;
     }
     
     .add-domain {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
     }
     
@@ -234,119 +345,100 @@
       flex: 1;
     }
     
-    .btn-add {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-    
-    .btn-add:hover {
-      background: #218838;
-    }
-    
+    /* User Info */
     .user-info {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
+      gap: 15px;
+      margin-bottom: 20px;
     }
     
     .user-avatar {
-      width: 45px;
-      height: 45px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.2);
+      background: #3498db;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 20px;
+      color: white;
     }
     
     .user-info h3 {
-      font-size: 16px;
-      margin-bottom: 2px;
+      font-size: 18px;
+      margin-bottom: 5px;
+      color: #2c3e50;
     }
     
     .user-info p {
-      font-size: 13px;
-      opacity: 0.8;
-      margin-bottom: 4px;
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-bottom: 5px;
     }
     
     .plan-badge {
       display: inline-block;
-      background: rgba(255,255,255,0.2);
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 10px;
-      text-transform: uppercase;
-      font-weight: 500;
-    }
-    
-    .plan-badge.pro {
       background: #f39c12;
-      color: #fff;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
     }
     
+    /* Payment Methods */
     .payment-methods {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin: 15px 0;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
     }
     
     .payment-method {
       border: 2px solid #ddd;
-      border-radius: 6px;
-      padding: 12px;
+      border-radius: 8px;
+      padding: 15px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
+      text-align: center;
     }
     
     .payment-method:hover {
-      border-color: #667eea;
+      border-color: #3498db;
+      transform: translateY(-2px);
     }
     
     .payment-method.selected {
-      border-color: #667eea;
-      background: #f0f4ff;
+      border-color: #3498db;
+      background: #ebf3fd;
     }
     
     .payment-method h4 {
-      font-size: 14px;
-      margin-bottom: 4px;
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #2c3e50;
     }
     
     .payment-method p {
-      font-size: 12px;
-      color: #666;
+      font-size: 13px;
+      color: #7f8c8d;
     }
     
-    .price {
-      font-size: 24px;
-      font-weight: bold;
-      color: #333;
-      text-align: center;
-      margin: 15px 0;
-    }
-    
+    /* Features List */
     .features-list {
       list-style: none;
-      margin: 15px 0;
+      margin: 20px 0;
     }
     
     .features-list li {
-      padding: 6px 0;
+      padding: 8px 0;
       border-bottom: 1px solid #eee;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
+      gap: 10px;
+      font-size: 14px;
     }
     
     .features-list li:last-child {
@@ -354,203 +446,406 @@
     }
     
     .feature-check {
-      color: #28a745;
-      font-size: 14px;
+      color: #27ae60;
+      font-size: 16px;
     }
     
-    .save-section {
-      text-align: center;
-      padding: 15px;
-      background: #f8f9fa;
-      border-top: 1px solid #e0e0e0;
-      margin-top: 20px;
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+      
+      .app-container {
+        flex-direction: column;
+      }
+      
+      .content-area {
+        height: auto;
+      }
     }
     
-    .save-section .btn {
-      margin: 0 4px;
+    /* Scrollbar Styling */
+    .sidebar::-webkit-scrollbar,
+    .content-area::-webkit-scrollbar {
+      width: 6px;
     }
     
-    .alert {
-      padding: 10px 12px;
-      border-radius: 4px;
-      margin: 10px 0;
-      font-size: 13px;
+    .sidebar::-webkit-scrollbar-track,
+    .content-area::-webkit-scrollbar-track {
+      background: #f1f1f1;
     }
     
-    .alert-success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+    .sidebar::-webkit-scrollbar-thumb,
+    .content-area::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
     }
     
-    .alert-warning {
-      background: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeaa7;
-    }
-    
-    /* Compact spacing for better visual connection */
-    .section:last-child {
-      margin-bottom: 0;
-    }
-    
-    .form-group:last-child {
-      margin-bottom: 0;
-    }
-    
-    /* Better visual hierarchy */
-    .section:hover {
-      border-color: #667eea;
-      box-shadow: 0 1px 3px rgba(102, 126, 234, 0.1);
+    .sidebar::-webkit-scrollbar-thumb:hover,
+    .content-area::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>AutoPurge Settings</h1>
-      <p>Configure your privacy protection and manage your account</p>
+  <div class="app-container">
+    <!-- Left Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>AutoPurge</h1>
+        <p>Privacy Protection Settings</p>
+      </div>
+      
+      <nav class="nav-menu">
+        <div class="nav-item active" data-section="overview">
+          <i>🏠</i>
+          <span>Overview</span>
+        </div>
+        
+        <div class="nav-item" data-section="general">
+          <i>⚙️</i>
+          <span>General Settings</span>
+        </div>
+        
+        <div class="nav-item" data-section="domains">
+          <i>🌐</i>
+          <span>Domain Management</span>
+        </div>
+        
+        <div class="nav-item" data-section="features">
+          <i>🚀</i>
+          <span>Advanced Features</span>
+        </div>
+        
+        <div class="nav-item" data-section="subscription">
+          <i>💎</i>
+          <span>Subscription</span>
+        </div>
+        
+        <div class="nav-item" data-section="account">
+          <i>👤</i>
+          <span>Account</span>
+        </div>
+        
+        <div class="nav-divider"></div>
+        
+        <div class="nav-item" data-section="help">
+          <i>❓</i>
+          <span>Help & Support</span>
+        </div>
+        
+        <div class="nav-item" data-section="about">
+          <i>ℹ️</i>
+          <span>About</span>
+        </div>
+      </nav>
     </div>
 
-    <div class="content">
-      <!-- User Account Section -->
-      <div class="section">
-        <h2>Account</h2>
-        <div class="user-info">
-          <div class="user-avatar">👤</div>
-          <div>
-            <h3 id="userName">Guest User</h3>
-            <p id="userEmail">Not signed in</p>
-            <span class="plan-badge" id="planBadge">Free</span>
-          </div>
+    <!-- Right Content Area -->
+    <div class="content-area">
+      <!-- Overview Section -->
+      <div class="content-section active" id="overview">
+        <div class="content-header">
+          <h2>Overview</h2>
+          <p>Welcome to AutoPurge - Your privacy protection dashboard</p>
         </div>
-        <div>
-          <button class="btn btn-secondary" id="signInBtn">Sign In</button>
-          <button class="btn btn-primary" id="signUpBtn">Sign Up</button>
-          <button class="btn btn-pro" id="upgradeBtn" style="display: none;">Upgrade to Pro</button>
-        </div>
-      </div>
-
-      <!-- Basic Settings -->
-      <div class="section">
-        <h2>Basic Settings</h2>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="enabledToggle" class="toggle-switch">
-            <span class="slider"></span>
-            Enable AutoPurge
-          </label>
-        </div>
-        <div class="form-group">
-          <label for="delayInput">Deletion Delay (seconds)</label>
-          <input type="number" id="delayInput" class="form-control" min="1" max="300" value="10">
-        </div>
-        <div class="form-group">
-          <label for="freeLimitInput">Free Plan Limit (deletions/day)</label>
-          <input type="number" id="freeLimitInput" class="form-control" min="1" max="100" value="10">
-        </div>
-      </div>
-
-      <!-- Domain Management -->
-      <div class="section">
-        <h2>Domain Management</h2>
-        <div class="form-group">
-          <label>Preset Domains (20 domains)</label>
-          <div class="domain-list" id="presetDomainsList">
-            <!-- Will be populated by JavaScript -->
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Custom Domains</label>
-          <div class="domain-list" id="customDomainsList">
-            <!-- Will be populated by JavaScript -->
-          </div>
-          <div class="add-domain">
-            <input type="text" id="newDomainInput" class="form-control" placeholder="Enter domain (e.g., example.com)">
-            <button class="btn-add" id="addDomainBtn">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Advanced Features -->
-      <div class="section">
-        <h2>Advanced Features</h2>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="shadowHistoryToggle" class="toggle-switch">
-            <span class="slider"></span>
-            Shadow History (Pro)
-          </label>
-          <p style="font-size: 11px; color: #666; margin-top: 3px; margin-left: 60px;">
-            Encrypted backup of deleted history
-          </p>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="analyticsToggle" class="toggle-switch">
-            <span class="slider"></span>
-            Advanced Analytics (Pro)
-          </label>
-          <p style="font-size: 11px; color: #666; margin-top: 3px; margin-left: 60px;">
-            Detailed usage statistics and insights
-          </p>
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="prioritySupportToggle" class="toggle-switch">
-            <span class="slider"></span>
-            Priority Support (Pro)
-          </label>
-          <p style="font-size: 11px; color: #666; margin-top: 3px; margin-left: 60px;">
-            Faster response times and dedicated support
-          </p>
-        </div>
-      </div>
-
-      <!-- Payment & Subscription -->
-      <div class="section">
-        <h2>Subscription Plans</h2>
-        <div class="price">
-          $4.99<span style="font-size: 14px;">/month</span>
-        </div>
-        <p style="text-align: center; margin-bottom: 15px; font-size: 13px;">Pro Plan - Unlock all features</p>
         
-        <div class="payment-methods">
-          <div class="payment-method" data-method="card">
-            <h4>💳 Credit Card</h4>
-            <p>Visa, Mastercard, American Express</p>
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>📊</i>Current Status</h3>
+            <div class="user-info">
+              <div class="user-avatar">👤</div>
+              <div>
+                <h3 id="userName">Guest User</h3>
+                <p id="userEmail">Not signed in</p>
+                <span class="plan-badge" id="planBadge">Free</span>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="signInBtn">Sign In</button>
+              <button class="btn btn-secondary" id="signUpBtn">Sign Up</button>
+              <button class="btn btn-warning" id="upgradeBtn" style="display: none;">Upgrade to Pro</button>
+            </div>
           </div>
-          <div class="payment-method" data-method="paypal">
-            <h4>PayPal</h4>
-            <p>Fast and secure payment</p>
+          
+          <div class="section-card">
+            <h3><i>⚡</i>Quick Actions</h3>
+            <p style="margin-bottom: 15px; color: #7f8c8d;">Common settings and actions you can take right now:</p>
+            <button class="btn btn-primary">Enable AutoPurge</button>
+            <button class="btn btn-secondary">Add Domain</button>
+            <button class="btn btn-success">Export Settings</button>
           </div>
-          <div class="payment-method" data-method="crypto">
-            <h4>₿ Cryptocurrency</h4>
-            <p>Bitcoin, Ethereum, USDC</p>
-          </div>
-        </div>
-
-        <ul class="features-list">
-          <li><span class="feature-check">✓</span> Unlimited history deletions</li>
-          <li><span class="feature-check">✓</span> Shadow History encryption</li>
-          <li><span class="feature-check">✓</span> Advanced analytics dashboard</li>
-          <li><span class="feature-check">✓</span> Priority customer support</li>
-          <li><span class="feature-check">✓</span> Custom domain rules</li>
-          <li><span class="feature-check">✓</span> API access</li>
-        </ul>
-
-        <div style="text-align: center; margin-top: 15px;">
-          <button class="btn btn-pro" id="subscribeBtn">Subscribe Now</button>
         </div>
       </div>
 
-      <!-- Save Section -->
-      <div class="save-section">
-        <button class="btn btn-primary" id="saveBtn">Save Changes</button>
-        <button class="btn btn-secondary" id="resetBtn">Reset to Defaults</button>
-        <button class="btn btn-secondary" id="exportBtn">Export Settings</button>
-        <button class="btn btn-secondary" id="importBtn">Import Settings</button>
+      <!-- General Settings Section -->
+      <div class="content-section" id="general">
+        <div class="content-header">
+          <h2>General Settings</h2>
+          <p>Configure basic AutoPurge functionality</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>🔧</i>Basic Configuration</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="enabledToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Enable AutoPurge
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="delayInput">Deletion Delay (seconds)</label>
+              <input type="number" id="delayInput" class="form-control" min="1" max="300" value="10">
+            </div>
+            <div class="form-group">
+              <label for="freeLimitInput">Free Plan Limit (deletions/day)</label>
+              <input type="number" id="freeLimitInput" class="form-control" min="1" max="100" value="10">
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>💾</i>Data Management</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="autoBackupToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Auto Backup Settings
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="syncToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Sync Across Devices
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Domain Management Section -->
+      <div class="content-section" id="domains">
+        <div class="content-header">
+          <h2>Domain Management</h2>
+          <p>Manage which domains AutoPurge will protect</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>📋</i>Preset Domains</h3>
+            <p style="margin-bottom: 15px; color: #7f8c8d;">Pre-configured domains for common privacy protection:</p>
+            <div class="domain-list" id="presetDomainsList">
+              <!-- Will be populated by JavaScript -->
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>➕</i>Custom Domains</h3>
+            <div class="domain-list" id="customDomainsList">
+              <!-- Will be populated by JavaScript -->
+            </div>
+            <div class="add-domain">
+              <input type="text" id="newDomainInput" class="form-control" placeholder="Enter domain (e.g., example.com)">
+              <button class="btn btn-success" id="addDomainBtn">Add Domain</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Features Section -->
+      <div class="content-section" id="features">
+        <div class="content-header">
+          <h2>Advanced Features</h2>
+          <p>Unlock premium features with Pro subscription</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>🔒</i>Privacy Features</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="shadowHistoryToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Shadow History (Pro)
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Encrypted backup of deleted history
+              </p>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="analyticsToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Advanced Analytics (Pro)
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Detailed usage statistics and insights
+              </p>
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>🎯</i>Advanced Options</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="prioritySupportToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Priority Support (Pro)
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Faster response times and dedicated support
+              </p>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="apiAccessToggle" class="toggle-switch">
+                <span class="slider"></span>
+                API Access (Pro)
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Programmatic access to AutoPurge features
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription Section -->
+      <div class="content-section" id="subscription">
+        <div class="content-header">
+          <h2>Subscription Plans</h2>
+          <p>Choose the plan that fits your privacy needs</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>💎</i>Pro Plan</h3>
+            <div style="text-align: center; margin: 20px 0;">
+              <div style="font-size: 32px; font-weight: bold; color: #2c3e50;">
+                $4.99<span style="font-size: 16px;">/month</span>
+              </div>
+              <p style="color: #7f8c8d; margin-bottom: 20px;">Unlock all premium features</p>
+            </div>
+            
+            <div class="payment-methods">
+              <div class="payment-method" data-method="card">
+                <h4>💳 Credit Card</h4>
+                <p>Visa, Mastercard, American Express</p>
+              </div>
+              <div class="payment-method" data-method="paypal">
+                <h4>PayPal</h4>
+                <p>Fast and secure payment</p>
+              </div>
+              <div class="payment-method" data-method="crypto">
+                <h4>₿ Cryptocurrency</h4>
+                <p>Bitcoin, Ethereum, USDC</p>
+              </div>
+            </div>
+
+            <ul class="features-list">
+              <li><span class="feature-check">✓</span> Unlimited history deletions</li>
+              <li><span class="feature-check">✓</span> Shadow History encryption</li>
+              <li><span class="feature-check">✓</span> Advanced analytics dashboard</li>
+              <li><span class="feature-check">✓</span> Priority customer support</li>
+              <li><span class="feature-check">✓</span> Custom domain rules</li>
+              <li><span class="feature-check">✓</span> API access</li>
+            </ul>
+
+            <div style="text-align: center; margin-top: 20px;">
+              <button class="btn btn-warning" id="subscribeBtn">Subscribe Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Section -->
+      <div class="content-section" id="account">
+        <div class="content-header">
+          <h2>Account Settings</h2>
+          <p>Manage your account and preferences</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>👤</i>Profile Information</h3>
+            <div class="form-group">
+              <label for="displayName">Display Name</label>
+              <input type="text" id="displayName" class="form-control" placeholder="Enter your display name">
+            </div>
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" class="form-control" placeholder="Enter your email">
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>🔐</i>Security</h3>
+            <div class="form-group">
+              <label for="currentPassword">Current Password</label>
+              <input type="password" id="currentPassword" class="form-control" placeholder="Enter current password">
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <input type="password" id="newPassword" class="form-control" placeholder="Enter new password">
+            </div>
+            <button class="btn btn-primary">Update Password</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Section -->
+      <div class="content-section" id="help">
+        <div class="content-header">
+          <h2>Help & Support</h2>
+          <p>Get help and find answers to common questions</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>📚</i>Documentation</h3>
+            <p style="margin-bottom: 15px;">Learn how to use AutoPurge effectively:</p>
+            <button class="btn btn-secondary">User Guide</button>
+            <button class="btn btn-secondary">FAQ</button>
+            <button class="btn btn-secondary">Video Tutorials</button>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>💬</i>Contact Support</h3>
+            <p style="margin-bottom: 15px;">Need help? Our support team is here for you:</p>
+            <button class="btn btn-primary">Submit Ticket</button>
+            <button class="btn btn-secondary">Live Chat</button>
+            <button class="btn btn-secondary">Email Support</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- About Section -->
+      <div class="content-section" id="about">
+        <div class="content-header">
+          <h2>About AutoPurge</h2>
+          <p>Learn more about your privacy protection tool</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>ℹ️</i>Version Information</h3>
+            <p><strong>Version:</strong> 1.0.0</p>
+            <p><strong>Build Date:</strong> December 2024</p>
+            <p><strong>License:</strong> MIT</p>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>🔗</i>Links</h3>
+            <button class="btn btn-secondary">Privacy Policy</button>
+            <button class="btn btn-secondary">Terms of Service</button>
+            <button class="btn btn-secondary">GitHub Repository</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
