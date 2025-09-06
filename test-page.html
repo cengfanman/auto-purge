@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge 扩展测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .error {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+        .success {
+            border-left-color: #27ae60;
+            background: #f0f9f0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.enabled { background: #27ae60; color: white; }
+        .status.disabled { background: #e74c3c; color: white; }
+        .status.unknown { background: #95a5a6; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔧 AutoPurge 扩展测试页面</h1>
+    
+    <div class="section">
+        <h2>📊 扩展状态检查</h2>
+        <p>扩展状态: <span id="extensionStatus" class="status unknown">检查中...</span></p>
+        <p>当前网站: <span id="currentSite">检查中...</span></p>
+        <p>域名匹配: <span id="domainMatch">检查中...</span></p>
+        <button onclick="checkExtensionStatus()">刷新状态</button>
+    </div>
+    
+    <div class="section">
+        <h2>🌐 域名匹配测试</h2>
+        <p>测试 91porny.com 是否会被检测到：</p>
+        <button onclick="testDomainMatching()">测试域名匹配</button>
+        <div id="domainTestResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>📜 历史记录检查</h2>
+        <p>检查浏览器历史记录中是否有 91porny.com：</p>
+        <button onclick="checkBrowserHistory()">检查历史记录</button>
+        <div id="historyResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>⚙️ 扩展配置</h2>
+        <p>检查扩展的配置设置：</p>
+        <button onclick="checkExtensionConfig()">检查配置</button>
+        <div id="configResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>🔍 调试日志</h2>
+        <button onclick="clearLog()">清空日志</button>
+        <div id="debugLog" class="log">等待调试信息...</div>
+    </div>
+    
+    <div class="section">
+        <h2>❓ 问题诊断</h2>
+        <h3>Security 和 History Record 的区别：</h3>
+        <ul>
+            <li><strong>Security</strong>：浏览器安全状态，指网站是否使用 HTTPS 加密连接</li>
+            <li><strong>History Record</strong>：扩展内部功能，记录被删除的浏览历史条目</li>
+        </ul>
+        
+        <h3>为什么 91porny.com 没有出现在历史记录中：</h3>
+        <ol>
+            <li>扩展可能未启用</li>
+            <li>域名匹配逻辑可能有问题</li>
+            <li>历史记录功能可能未启用</li>
+            <li>延迟删除机制（10秒延迟）</li>
+            <li>浏览器历史记录中确实没有该网站</li>
+        </ol>
+    </div>
+
+    <script>
+        let debugLog = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            debugLog.push(logEntry);
+            
+            const logElement = document.getElementById('debugLog');
+            logElement.textContent = debugLog.join('\n');
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            console.log(logEntry);
+        }
+        
+        function clearLog() {
+            debugLog = [];
+            document.getElementById('debugLog').textContent = '日志已清空';
+        }
+        
+        async function checkExtensionStatus() {
+            log('开始检查扩展状态...');
+            
+            try {
+                // 检查扩展是否响应
+                const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
+                log('扩展配置加载成功', 'success');
+                
+                // 更新状态显示
+                const statusElement = document.getElementById('extensionStatus');
+                if (response.enabled) {
+                    statusElement.textContent = '已启用';
+                    statusElement.className = 'status enabled';
+                } else {
+                    statusElement.textContent = '已禁用';
+                    statusElement.className = 'status disabled';
+                }
+                
+                // 检查当前标签页状态
+                const tabStatus = await chrome.runtime.sendMessage({ action: 'getCurrentTabStatus' });
+                log('当前标签页状态: ' + JSON.stringify(tabStatus));
+                
+                document.getElementById('currentSite').textContent = tabStatus.hostname || '未知';
+                document.getElementById('domainMatch').textContent = tabStatus.isMatched ? '✅ 匹配' : '❌ 不匹配';
+                
+                return response;
+                
+            } catch (error) {
+                log('扩展检查失败: ' + error.message, 'error');
+                document.getElementById('extensionStatus').textContent = '未加载';
+                document.getElementById('extensionStatus').className = 'status disabled';
+                return null;
+            }
+        }
+        
+        async function testDomainMatching() {
+            log('开始测试域名匹配...');
+            
+            const testUrls = [
+                'https://91porny.com',
+                'https://www.91porny.com',
+                'https://91porny.com/',
+                'https://91porny.com/some-page'
+            ];
+            
+            const resultDiv = document.getElementById('domainTestResult');
+            let html = '<h4>测试结果：</h4>';
+            
+            for (const url of testUrls) {
+                try {
+                    const urlObj = new URL(url);
+                    const hostname = urlObj.hostname.toLowerCase();
+                    
+                    // 预设域名列表（从扩展代码中复制）
+                    const presetDomains = [
+                        "xvideos.com", "pornhub.com", "xnxx.com", "redtube.com", "youporn.com",
+                        "tube8.com", "spankbang.com", "xhamster.com", "chaturbate.com", "cam4.com",
+                        "stripchat.com", "bongacams.com", "livejasmin.com", "camsoda.com", "myfreecams.com",
+                        "onlyfans.com", "fansly.com", "manyvids.com", "clips4sale.com", "iwantclips.com",
+                        "91porny.com", "google.com", "facebook.com", "youtube.com", "twitter.com",
+                        "instagram.com", "linkedin.com", "reddit.com", "amazon.com", "netflix.com", "spotify.com"
+                    ];
+                    
+                    let matched = false;
+                    for (const domain of presetDomains) {
+                        if (hostname === domain || hostname.endsWith('.' + domain)) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                    
+                    const status = matched ? '✅ 匹配' : '❌ 不匹配';
+                    const color = matched ? 'green' : 'red';
+                    
+                    html += `<p style="color: ${color};">${url} → ${status}</p>`;
+                    log(`${url} → ${status}`);
+                    
+                } catch (error) {
+                    html += `<p style="color: red;">${url} → 解析失败: ${error.message}</p>`;
+                    log(`${url} → 解析失败: ${error.message}`, 'error');
+                }
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        async function checkBrowserHistory() {
+            log('开始检查浏览器历史记录...');
+            
+            try {
+                const history = await chrome.history.search({
+                    text: '91porny',
+                    maxResults: 10,
+                    startTime: Date.now() - (24 * 60 * 60 * 1000) // 最近24小时
+                });
+                
+                const resultDiv = document.getElementById('historyResult');
+                
+                if (history.length === 0) {
+                    resultDiv.innerHTML = '<p style="color: orange;">❌ 没有找到包含 91porny 的历史记录</p>';
+                    log('没有找到相关历史记录', 'warning');
+                } else {
+                    let html = `<h4>找到 ${history.length} 条相关历史记录：</h4>`;
+                    history.forEach((item, index) => {
+                        const visitTime = new Date(item.lastVisitTime).toLocaleString();
+                        html += `<p>${index + 1}. <a href="${item.url}" target="_blank">${item.title || item.url}</a><br>
+                                <small>访问时间: ${visitTime}</small></p>`;
+                    });
+                    resultDiv.innerHTML = html;
+                    log(`找到 ${history.length} 条相关历史记录`, 'success');
+                }
+                
+                return history;
+                
+            } catch (error) {
+                log('检查历史记录失败: ' + error.message, 'error');
+                document.getElementById('historyResult').innerHTML = '<p style="color: red;">❌ 检查失败: ' + error.message + '</p>';
+                return [];
+            }
+        }
+        
+        async function checkExtensionConfig() {
+            log('开始检查扩展配置...');
+            
+            try {
+                const config = await chrome.runtime.sendMessage({ action: 'getConfig' });
+                const stats = await chrome.runtime.sendMessage({ action: 'getStats' });
+                const historySettings = await chrome.storage.local.get(['historySettings']);
+                const historyRecords = await chrome.storage.local.get(['historyRecords']);
+                
+                const resultDiv = document.getElementById('configResult');
+                
+                let html = '<h4>扩展配置：</h4>';
+                html += `<p><strong>启用状态:</strong> ${config.enabled ? '✅ 已启用' : '❌ 已禁用'}</p>`;
+                html += `<p><strong>延迟时间:</strong> ${config.delaySec} 秒</p>`;
+                html += `<p><strong>用户域名数量:</strong> ${config.userDomains ? config.userDomains.length : 0}</p>`;
+                html += `<p><strong>今日删除次数:</strong> ${stats.deletionsToday || 0}</p>`;
+                html += `<p><strong>总删除次数:</strong> ${stats.deletionsTotal || 0}</p>`;
+                html += `<p><strong>队列大小:</strong> ${stats.queueSize || 0}</p>`;
+                
+                if (historySettings.historySettings) {
+                    const settings = historySettings.historySettings;
+                    html += '<h4>历史记录设置：</h4>';
+                    html += `<p><strong>自动记录:</strong> ${settings.autoRecord ? '✅ 启用' : '❌ 禁用'}</p>`;
+                    html += `<p><strong>最大记录数:</strong> ${settings.maxRecords || 1000}</p>`;
+                    html += `<p><strong>保留天数:</strong> ${settings.retentionDays || 30}</p>`;
+                }
+                
+                if (historyRecords.historyRecords) {
+                    const records = historyRecords.historyRecords;
+                    html += '<h4>历史记录：</h4>';
+                    html += `<p><strong>记录数量:</strong> ${records.length}</p>`;
+                    
+                    if (records.length > 0) {
+                        html += '<h5>最近的记录：</h5>';
+                        records.slice(0, 5).forEach((record, index) => {
+                            const deletedTime = new Date(record.deletedAt).toLocaleString();
+                            html += `<p>${index + 1}. ${record.url}<br><small>删除时间: ${deletedTime}</small></p>`;
+                        });
+                    }
+                }
+                
+                resultDiv.innerHTML = html;
+                log('配置检查完成', 'success');
+                
+            } catch (error) {
+                log('配置检查失败: ' + error.message, 'error');
+                document.getElementById('configResult').innerHTML = '<p style="color: red;">❌ 配置检查失败: ' + error.message + '</p>';
+            }
+        }
+        
+        // 页面加载时自动检查
+        window.addEventListener('load', () => {
+            log('页面加载完成，开始自动检查...');
+            checkExtensionStatus();
+        });
+    </script>
+</body>
+</html>

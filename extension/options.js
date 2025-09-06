@@ -5,26 +5,52 @@
 
 // Navigation functionality for left-right layout
 function setupNavigation() {
+  console.log('Setting up navigation...');
+  
   const navItems = document.querySelectorAll('.nav-item');
   const contentSections = document.querySelectorAll('.content-section');
   
-  navItems.forEach(item => {
-    item.addEventListener('click', () => {
+  console.log('Found nav items:', navItems.length);
+  console.log('Found content sections:', contentSections.length);
+  
+  navItems.forEach((item, index) => {
+    console.log(`Setting up nav item ${index}:`, item.dataset.section);
+    
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Nav item clicked:', item.dataset.section);
+      
       const targetSection = item.dataset.section;
       
       // Update active nav item
-      navItems.forEach(nav => nav.classList.remove('active'));
+      navItems.forEach(nav => {
+        nav.classList.remove('active');
+      });
       item.classList.add('active');
       
       // Show target section
       contentSections.forEach(section => {
         section.classList.remove('active');
+        section.style.display = 'none';
+        
         if (section.id === targetSection) {
           section.classList.add('active');
+          section.style.display = 'block';
+          console.log('Showing section:', section.id);
         }
       });
+      
+      // 特殊处理：如果是历史记录页面，强制刷新内容
+      if (targetSection === 'history') {
+        console.log('History section activated, refreshing content...');
+        setTimeout(() => {
+          updateHistoryUI();
+        }, 100);
+      }
     });
   });
+  
+  console.log('Navigation setup complete');
 }
 
 // DOM elements - 初始化为 null，稍后获取
@@ -50,8 +76,36 @@ let resetBtn = null;
 let exportBtn = null;
 let importBtn = null;
 
+// Password protection elements
+let passwordEnabledToggle = null;
+let passwordSettings = null;
+let currentPasswordInput = null;
+let newPasswordInput = null;
+let confirmPasswordInput = null;
+let updatePasswordBtn = null;
+let removePasswordBtn = null;
+
+// History records elements
+let refreshHistoryBtn = null;
+let exportHistoryBtn = null;
+let clearHistoryBtn = null;
+let historyFilter = null;
+let historySearch = null;
+let historyStats = null;
+let historyList = null;
+let totalRecords = null;
+let todayRecords = null;
+let weekRecords = null;
+let storageUsed = null;
+let autoRecordToggle = null;
+let maxRecordsInput = null;
+let retentionDaysInput = null;
+let reloadDomainsBtn = null;
+
 // 获取 DOM 元素的函数
 function getDOMElements() {
+  console.log('Getting DOM elements...');
+  
   userName = document.getElementById('userName');
   userEmail = document.getElementById('userEmail');
   planBadge = document.getElementById('planBadge');
@@ -74,17 +128,62 @@ function getDOMElements() {
   exportBtn = document.getElementById('exportBtn');
   importBtn = document.getElementById('importBtn');
   
+  // Password protection elements
+  passwordEnabledToggle = document.getElementById('passwordEnabledToggle');
+  passwordSettings = document.getElementById('passwordSettings');
+  currentPasswordInput = document.getElementById('currentPasswordInput');
+  newPasswordInput = document.getElementById('newPasswordInput');
+  confirmPasswordInput = document.getElementById('confirmPasswordInput');
+  updatePasswordBtn = document.getElementById('updatePasswordBtn');
+  removePasswordBtn = document.getElementById('removePasswordBtn');
+  
+  // History records elements
+  refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+  exportHistoryBtn = document.getElementById('exportHistoryBtn');
+  clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  historyFilter = document.getElementById('historyFilter');
+  historySearch = document.getElementById('historySearch');
+  historyStats = document.getElementById('historyStats');
+  historyList = document.getElementById('historyList');
+  totalRecords = document.getElementById('totalRecords');
+  todayRecords = document.getElementById('todayRecords');
+  weekRecords = document.getElementById('weekRecords');
+  storageUsed = document.getElementById('storageUsed');
+  autoRecordToggle = document.getElementById('autoRecordToggle');
+  maxRecordsInput = document.getElementById('maxRecordsInput');
+  retentionDaysInput = document.getElementById('retentionDaysInput');
+  reloadDomainsBtn = document.getElementById('reloadDomainsBtn');
+  
   console.log('DOM elements found:');
   console.log('presetDomainsList:', presetDomainsList);
   console.log('customDomainsList:', customDomainsList);
   console.log('newDomainInput:', newDomainInput);
   console.log('addDomainBtn:', addDomainBtn);
+  console.log('refreshHistoryBtn:', refreshHistoryBtn);
+  console.log('historyList:', historyList);
+  
+  // 检查关键元素是否存在
+  if (!presetDomainsList) {
+    console.error('presetDomainsList not found!');
+  }
+  if (!customDomainsList) {
+    console.error('customDomainsList not found!');
+  }
+  if (!historyList) {
+    console.error('historyList not found!');
+  }
 }
 
 // Current configuration
 let config = {};
 let presetDomains = [];
 let user = null;
+let historyRecords = [];
+let passwordConfig = {
+  enabled: false,
+  hash: null,
+  salt: null
+};
 
 // Initialize options page
 document.addEventListener('DOMContentLoaded', async () => {
@@ -95,6 +194,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // 设置导航
   setupNavigation();
+  
+  // 强制显示默认内容
+  forceShowContent();
   
   // 加载数据
   await loadData();
@@ -107,6 +209,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   console.log('Initialization complete');
 });
+
+// 强制显示内容的函数
+function forceShowContent() {
+  console.log('Force showing content...');
+  
+  // 确保默认显示 Overview 部分
+  const overviewSection = document.getElementById('overview');
+  if (overviewSection) {
+    overviewSection.classList.add('active');
+    overviewSection.style.display = 'block';
+    console.log('Overview section activated');
+  }
+  
+  // 确保其他部分隐藏
+  const allSections = document.querySelectorAll('.content-section');
+  allSections.forEach(section => {
+    if (section.id !== 'overview') {
+      section.classList.remove('active');
+      section.style.display = 'none';
+    }
+  });
+  
+  // 确保导航项正确设置
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.section === 'overview') {
+      item.classList.add('active');
+    }
+  });
+  
+  console.log('Content display forced');
+}
 
 // Load configuration and data
 async function loadData() {
@@ -142,7 +277,16 @@ async function loadData() {
     // Load user data
     await loadUserData();
     
-    console.log('Options data loaded successfully:', { config, presetDomains, user });
+    // Load password configuration
+    await loadPasswordConfig();
+    
+    // Load history records
+    await loadHistoryRecords();
+    
+    // Load history settings
+    await loadHistorySettings();
+    
+    console.log('Options data loaded successfully:', { config, presetDomains, user, passwordConfig, historyRecords });
     
   } catch (error) {
     console.error('Failed to load options data:', error);
@@ -249,6 +393,63 @@ async function loadUserData() {
   }
 }
 
+// Load password configuration
+async function loadPasswordConfig() {
+  try {
+    const stored = localStorage.getItem('autopurge_password');
+    if (stored) {
+      passwordConfig = JSON.parse(stored);
+      console.log('Password config loaded:', passwordConfig);
+    } else {
+      passwordConfig = { enabled: false, hash: null, salt: null };
+    }
+  } catch (error) {
+    console.error('Failed to load password config:', error);
+    passwordConfig = { enabled: false, hash: null, salt: null };
+  }
+}
+
+// Load history records
+async function loadHistoryRecords() {
+  try {
+    const stored = await chrome.storage.local.get(['historyRecords']);
+    if (stored.historyRecords) {
+      historyRecords = stored.historyRecords;
+      console.log('History records loaded:', historyRecords.length, 'records');
+    } else {
+      historyRecords = [];
+    }
+  } catch (error) {
+    console.error('Failed to load history records:', error);
+    historyRecords = [];
+  }
+}
+
+// Load history settings
+async function loadHistorySettings() {
+  try {
+    const stored = await chrome.storage.local.get(['historySettings']);
+    if (stored.historySettings) {
+      const settings = stored.historySettings;
+      if (autoRecordToggle) autoRecordToggle.checked = settings.autoRecord || true;
+      if (maxRecordsInput) maxRecordsInput.value = settings.maxRecords || 1000;
+      if (retentionDaysInput) retentionDaysInput.value = settings.retentionDays || 30;
+      console.log('History settings loaded:', settings);
+    } else {
+      // Set default values
+      if (autoRecordToggle) autoRecordToggle.checked = true;
+      if (maxRecordsInput) maxRecordsInput.value = 1000;
+      if (retentionDaysInput) retentionDaysInput.value = 30;
+    }
+  } catch (error) {
+    console.error('Failed to load history settings:', error);
+    // Set default values on error
+    if (autoRecordToggle) autoRecordToggle.checked = true;
+    if (maxRecordsInput) maxRecordsInput.value = 1000;
+    if (retentionDaysInput) retentionDaysInput.value = 30;
+  }
+}
+
 // Setup event listeners
 function setupEventListeners() {
   console.log('Setting up event listeners...');
@@ -290,6 +491,22 @@ function setupEventListeners() {
     method.addEventListener('click', () => selectPaymentMethod(method));
   });
   
+  // Password protection
+  if (passwordEnabledToggle) passwordEnabledToggle.addEventListener('change', togglePasswordProtection);
+  if (updatePasswordBtn) updatePasswordBtn.addEventListener('click', updatePassword);
+  if (removePasswordBtn) removePasswordBtn.addEventListener('click', removePassword);
+  
+  // History records
+  if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
+  if (exportHistoryBtn) exportHistoryBtn.addEventListener('click', exportHistoryRecords);
+  if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistoryRecords);
+  if (historyFilter) historyFilter.addEventListener('change', filterHistoryRecords);
+  if (historySearch) historySearch.addEventListener('input', searchHistoryRecords);
+  if (autoRecordToggle) autoRecordToggle.addEventListener('change', updateHistorySettings);
+  if (maxRecordsInput) maxRecordsInput.addEventListener('change', updateHistorySettings);
+  if (retentionDaysInput) retentionDaysInput.addEventListener('change', updateHistorySettings);
+  if (reloadDomainsBtn) reloadDomainsBtn.addEventListener('click', reloadPresetDomains);
+  
   console.log('Event listeners setup complete');
 }
 
@@ -320,6 +537,12 @@ function updateUI() {
   
   // Update domain lists - 确保域名列表被更新
   updateDomainLists();
+  
+  // Update password protection UI
+  updatePasswordUI();
+  
+  // Update history records UI
+  updateHistoryUI();
   
   // 添加调试信息
   console.log('UI updated, preset domains:', presetDomains);
@@ -920,3 +1143,583 @@ window.optionsDebug = {
 window.forceRefreshDomains = () => {
   window.optionsDebug.forceRefreshDomains();
 };
+
+// ==================== 密码功能实现 ====================
+
+// 生成随机盐值
+function generateSalt() {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// 使用 Web Crypto API 进行密码哈希
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 验证密码
+async function verifyPassword(password, hash, salt) {
+  const hashedPassword = await hashPassword(password, salt);
+  return hashedPassword === hash;
+}
+
+// 更新密码保护 UI
+function updatePasswordUI() {
+  if (!passwordEnabledToggle || !passwordSettings) return;
+  
+  passwordEnabledToggle.checked = passwordConfig.enabled;
+  passwordSettings.style.display = passwordConfig.enabled ? 'block' : 'none';
+  
+  // 清空密码输入框
+  if (currentPasswordInput) currentPasswordInput.value = '';
+  if (newPasswordInput) newPasswordInput.value = '';
+  if (confirmPasswordInput) confirmPasswordInput.value = '';
+}
+
+// 切换密码保护
+async function togglePasswordProtection() {
+  const enabled = passwordEnabledToggle.checked;
+  
+  if (enabled) {
+    // 启用密码保护 - 需要设置密码
+    const password = prompt('Enter a password to protect AutoPurge settings:');
+    if (!password) {
+      passwordEnabledToggle.checked = false;
+      return;
+    }
+    
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters long');
+      passwordEnabledToggle.checked = false;
+      return;
+    }
+    
+    try {
+      const salt = generateSalt();
+      const hash = await hashPassword(password, salt);
+      
+      passwordConfig = {
+        enabled: true,
+        hash: hash,
+        salt: salt
+      };
+      
+      localStorage.setItem('autopurge_password', JSON.stringify(passwordConfig));
+      updatePasswordUI();
+      showSuccess('Password protection enabled');
+      
+    } catch (error) {
+      console.error('Failed to enable password protection:', error);
+      showError('Failed to enable password protection');
+      passwordEnabledToggle.checked = false;
+    }
+  } else {
+    // 禁用密码保护
+    passwordConfig = { enabled: false, hash: null, salt: null };
+    localStorage.removeItem('autopurge_password');
+    updatePasswordUI();
+    showSuccess('Password protection disabled');
+  }
+}
+
+// 更新密码
+async function updatePassword() {
+  const currentPassword = currentPasswordInput.value;
+  const newPassword = newPasswordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
+  
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showError('Please fill in all password fields');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showError('New passwords do not match');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showError('New password must be at least 6 characters long');
+    return;
+  }
+  
+  try {
+    // 验证当前密码
+    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
+    if (!isValid) {
+      showError('Current password is incorrect');
+      return;
+    }
+    
+    // 生成新的哈希
+    const salt = generateSalt();
+    const hash = await hashPassword(newPassword, salt);
+    
+    passwordConfig = {
+      enabled: true,
+      hash: hash,
+      salt: salt
+    };
+    
+    localStorage.setItem('autopurge_password', JSON.stringify(passwordConfig));
+    
+    // 清空输入框
+    currentPasswordInput.value = '';
+    newPasswordInput.value = '';
+    confirmPasswordInput.value = '';
+    
+    showSuccess('Password updated successfully');
+    
+  } catch (error) {
+    console.error('Failed to update password:', error);
+    showError('Failed to update password');
+  }
+}
+
+// 移除密码
+async function removePassword() {
+  const currentPassword = currentPasswordInput.value;
+  
+  if (!currentPassword) {
+    showError('Please enter current password to remove password protection');
+    return;
+  }
+  
+  try {
+    // 验证当前密码
+    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
+    if (!isValid) {
+      showError('Current password is incorrect');
+      return;
+    }
+    
+    passwordConfig = { enabled: false, hash: null, salt: null };
+    localStorage.removeItem('autopurge_password');
+    
+    // 清空输入框并更新 UI
+    currentPasswordInput.value = '';
+    newPasswordInput.value = '';
+    confirmPasswordInput.value = '';
+    passwordEnabledToggle.checked = false;
+    updatePasswordUI();
+    
+    showSuccess('Password protection removed');
+    
+  } catch (error) {
+    console.error('Failed to remove password:', error);
+    showError('Failed to remove password');
+  }
+}
+
+// ==================== 历史记录功能实现 ====================
+
+// 更新历史记录 UI
+function updateHistoryUI() {
+  if (!historyList || !totalRecords || !todayRecords || !weekRecords || !storageUsed) return;
+  
+  // 更新统计信息
+  const now = Date.now();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+  
+  const todayCount = historyRecords.filter(record => record.deletedAt >= today.getTime()).length;
+  const weekCount = historyRecords.filter(record => record.deletedAt >= weekAgo).length;
+  const totalCount = historyRecords.length;
+  
+  // 计算存储使用量
+  const storageSize = JSON.stringify(historyRecords).length;
+  const storageMB = (storageSize / (1024 * 1024)).toFixed(2);
+  
+  totalRecords.textContent = totalCount;
+  todayRecords.textContent = todayCount;
+  weekRecords.textContent = weekCount;
+  storageUsed.textContent = storageMB + ' MB';
+  
+  // 更新历史记录列表
+  updateHistoryList();
+}
+
+// 更新历史记录列表
+function updateHistoryList() {
+  if (!historyList) return;
+  
+  if (historyRecords.length === 0) {
+    historyList.innerHTML = `
+      <div style="padding: 20px; text-align: center; color: #7f8c8d;">
+        <div style="font-size: 48px; margin-bottom: 10px;">📜</div>
+        <div>No history records found</div>
+        <div style="font-size: 12px; margin-top: 5px;">Deleted browsing history will appear here</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // 按删除时间倒序排列
+  const sortedRecords = [...historyRecords].sort((a, b) => b.deletedAt - a.deletedAt);
+  
+  let html = '';
+  sortedRecords.forEach(record => {
+    const deletedDate = new Date(record.deletedAt);
+    const timeAgo = getTimeAgo(record.deletedAt);
+    
+    html += `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; background: white;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 500; color: #2c3e50; margin-bottom: 4px; word-break: break-all;">
+            ${record.title || record.url}
+          </div>
+          <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 2px; word-break: break-all;">
+            ${record.url}
+          </div>
+          <div style="font-size: 11px; color: #95a5a6;">
+            Deleted ${timeAgo} • ${deletedDate.toLocaleString()}
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="viewHistoryRecord('${record.id}')" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            View
+          </button>
+          <button onclick="deleteHistoryRecord('${record.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  
+  historyList.innerHTML = html;
+}
+
+// 获取相对时间
+function getTimeAgo(timestamp) {
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
+// 刷新历史记录
+async function refreshHistoryRecords() {
+  await loadHistoryRecords();
+  updateHistoryUI();
+  showSuccess('History records refreshed');
+}
+
+// 导出历史记录
+function exportHistoryRecords() {
+  if (historyRecords.length === 0) {
+    showError('No history records to export');
+    return;
+  }
+  
+  try {
+    const exportData = {
+      records: historyRecords,
+      exportDate: new Date().toISOString(),
+      totalRecords: historyRecords.length
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `autopurge-history-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    showSuccess('History records exported successfully');
+    
+  } catch (error) {
+    console.error('Failed to export history records:', error);
+    showError('Failed to export history records');
+  }
+}
+
+// 清空历史记录
+async function clearHistoryRecords() {
+  if (historyRecords.length === 0) {
+    showError('No history records to clear');
+    return;
+  }
+  
+  if (!confirm(`Are you sure you want to clear all ${historyRecords.length} history records? This action cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    historyRecords = [];
+    await chrome.storage.local.remove(['historyRecords']);
+    updateHistoryUI();
+    showSuccess('All history records cleared');
+    
+  } catch (error) {
+    console.error('Failed to clear history records:', error);
+    showError('Failed to clear history records');
+  }
+}
+
+// 过滤历史记录
+function filterHistoryRecords() {
+  if (!historyFilter) return;
+  
+  const filter = historyFilter.value;
+  const now = Date.now();
+  let filteredRecords = [...historyRecords];
+  
+  switch (filter) {
+    case 'today':
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filteredRecords = historyRecords.filter(record => record.deletedAt >= today.getTime());
+      break;
+    case 'week':
+      const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+      filteredRecords = historyRecords.filter(record => record.deletedAt >= weekAgo);
+      break;
+    case 'month':
+      const monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+      filteredRecords = historyRecords.filter(record => record.deletedAt >= monthAgo);
+      break;
+  }
+  
+  // 更新显示
+  updateHistoryListWithFilter(filteredRecords);
+}
+
+// 搜索历史记录
+function searchHistoryRecords() {
+  if (!historySearch) return;
+  
+  const searchTerm = historySearch.value.toLowerCase();
+  if (!searchTerm) {
+    updateHistoryList();
+    return;
+  }
+  
+  const filteredRecords = historyRecords.filter(record => 
+    record.url.toLowerCase().includes(searchTerm) || 
+    (record.title && record.title.toLowerCase().includes(searchTerm))
+  );
+  
+  updateHistoryListWithFilter(filteredRecords);
+}
+
+// 使用过滤后的记录更新列表
+function updateHistoryListWithFilter(filteredRecords) {
+  if (!historyList) return;
+  
+  if (filteredRecords.length === 0) {
+    historyList.innerHTML = `
+      <div style="padding: 20px; text-align: center; color: #7f8c8d;">
+        <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
+        <div>No matching records found</div>
+        <div style="font-size: 12px; margin-top: 5px;">Try adjusting your search or filter</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // 按删除时间倒序排列
+  const sortedRecords = [...filteredRecords].sort((a, b) => b.deletedAt - a.deletedAt);
+  
+  let html = '';
+  sortedRecords.forEach(record => {
+    const deletedDate = new Date(record.deletedAt);
+    const timeAgo = getTimeAgo(record.deletedAt);
+    
+    html += `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; background: white;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 500; color: #2c3e50; margin-bottom: 4px; word-break: break-all;">
+            ${record.title || record.url}
+          </div>
+          <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 2px; word-break: break-all;">
+            ${record.url}
+          </div>
+          <div style="font-size: 11px; color: #95a5a6;">
+            Deleted ${timeAgo} • ${deletedDate.toLocaleString()}
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="viewHistoryRecord('${record.id}')" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            View
+          </button>
+          <button onclick="deleteHistoryRecord('${record.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  
+  historyList.innerHTML = html;
+}
+
+// 更新历史记录设置
+async function updateHistorySettings() {
+  if (!autoRecordToggle || !maxRecordsInput || !retentionDaysInput) return;
+  
+  const settings = {
+    autoRecord: autoRecordToggle.checked,
+    maxRecords: parseInt(maxRecordsInput.value),
+    retentionDays: parseInt(retentionDaysInput.value)
+  };
+  
+  try {
+    await chrome.storage.local.set({ historySettings: settings });
+    showSuccess('History settings updated');
+  } catch (error) {
+    console.error('Failed to update history settings:', error);
+    showError('Failed to update history settings');
+  }
+}
+
+// 查看历史记录详情
+function viewHistoryRecord(recordId) {
+  const record = historyRecords.find(r => r.id === recordId);
+  if (!record) return;
+  
+  const details = `
+URL: ${record.url}
+Title: ${record.title || 'No title'}
+Deleted: ${new Date(record.deletedAt).toLocaleString()}
+Domain: ${record.domain || 'Unknown'}
+  `;
+  
+  alert(details);
+}
+
+// 删除单个历史记录
+async function deleteHistoryRecord(recordId) {
+  if (!confirm('Are you sure you want to delete this history record?')) return;
+  
+  try {
+    historyRecords = historyRecords.filter(r => r.id !== recordId);
+    await chrome.storage.local.set({ historyRecords: historyRecords });
+    updateHistoryUI();
+    showSuccess('History record deleted');
+  } catch (error) {
+    console.error('Failed to delete history record:', error);
+    showError('Failed to delete history record');
+  }
+}
+
+// 添加历史记录（供 background script 调用）
+function addHistoryRecord(url, title, domain) {
+  const record = {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    url: url,
+    title: title || '',
+    domain: domain || '',
+    deletedAt: Date.now()
+  };
+  
+  historyRecords.unshift(record);
+  
+  // 限制记录数量
+  const maxRecords = 1000; // 默认最大记录数
+  if (historyRecords.length > maxRecords) {
+    historyRecords = historyRecords.slice(0, maxRecords);
+  }
+  
+  chrome.storage.local.set({ historyRecords: historyRecords });
+  updateHistoryUI();
+}
+
+// 重新加载预设域名
+async function reloadPresetDomains() {
+  try {
+    reloadDomainsBtn.disabled = true;
+    reloadDomainsBtn.textContent = 'Reloading...';
+    
+    const response = await chrome.runtime.sendMessage({ action: 'reloadPresetDomains' });
+    
+    if (response.success) {
+      presetDomains = response.domains;
+      updateDomainLists();
+      showSuccess(`Reloaded ${presetDomains.length} preset domains`);
+    } else {
+      showError('Failed to reload domains: ' + response.error);
+    }
+    
+  } catch (error) {
+    console.error('Failed to reload preset domains:', error);
+    showError('Failed to reload domains');
+  } finally {
+    reloadDomainsBtn.disabled = false;
+    reloadDomainsBtn.textContent = 'Reload Domains';
+  }
+}
+
+// 导出函数供全局使用
+window.viewHistoryRecord = viewHistoryRecord;
+window.deleteHistoryRecord = deleteHistoryRecord;
+window.addHistoryRecord = addHistoryRecord;
+
+// 调试函数
+window.debugOptions = {
+  // 检查页面状态
+  checkPageStatus: () => {
+    console.log('=== 页面状态检查 ===');
+    console.log('DOM 加载完成:', document.readyState);
+    console.log('当前活动部分:', document.querySelector('.content-section.active')?.id);
+    console.log('导航项数量:', document.querySelectorAll('.nav-item').length);
+    console.log('内容部分数量:', document.querySelectorAll('.content-section').length);
+    
+    // 检查关键元素
+    const keyElements = [
+      'presetDomainsList', 'customDomainsList', 'historyList', 
+      'refreshHistoryBtn', 'autoRecordToggle'
+    ];
+    
+    keyElements.forEach(id => {
+      const element = document.getElementById(id);
+      console.log(`${id}:`, element ? '✅ 找到' : '❌ 未找到');
+    });
+  },
+  
+  // 强制显示所有内容
+  forceShowAll: () => {
+    console.log('强制显示所有内容...');
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+      section.style.display = 'block';
+      section.classList.add('active');
+    });
+    console.log('所有内容已显示');
+  },
+  
+  // 重置到默认状态
+  resetToDefault: () => {
+    console.log('重置到默认状态...');
+    forceShowContent();
+    console.log('已重置到默认状态');
+  },
+  
+  // 测试历史记录功能
+  testHistoryRecords: () => {
+    console.log('测试历史记录功能...');
+    updateHistoryUI();
+    console.log('历史记录功能测试完成');
+  }
+};
+
+console.log('调试函数已加载，可以使用:');
+console.log('- window.debugOptions.checkPageStatus() - 检查页面状态');
+console.log('- window.debugOptions.forceShowAll() - 强制显示所有内容');
+console.log('- window.debugOptions.resetToDefault() - 重置到默认状态');
+console.log('- window.debugOptions.testHistoryRecords() - 测试历史记录功能');

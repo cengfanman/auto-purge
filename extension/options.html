@@ -131,7 +131,16 @@
     }
     
     .content-section.active {
-      display: block;
+      display: block !important;
+    }
+    
+    /* 强制显示修复 */
+    .content-section[style*="display: block"] {
+      display: block !important;
+    }
+    
+    .content-section[style*="display: none"] {
+      display: none !important;
     }
     
     @keyframes fadeIn {
@@ -534,6 +543,16 @@
           <span>Subscription</span>
         </div>
         
+        <div class="nav-item" data-section="security">
+          <i>🔐</i>
+          <span>Security</span>
+        </div>
+        
+        <div class="nav-item" data-section="history">
+          <i>📜</i>
+          <span>History Records</span>
+        </div>
+        
         <div class="nav-item" data-section="account">
           <i>👤</i>
           <span>Account</span>
@@ -556,7 +575,7 @@
     <!-- Right Content Area -->
     <div class="content-area">
       <!-- Overview Section -->
-      <div class="content-section active" id="overview">
+      <div class="content-section active" id="overview" style="display: block;">
         <div class="content-header">
           <h2>Overview</h2>
           <p>Welcome to AutoPurge - Your privacy protection dashboard</p>
@@ -816,6 +835,158 @@
 
             <div style="text-align: center; margin-top: 20px;">
               <button class="btn btn-warning" id="subscribeBtn">Subscribe Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Section -->
+      <div class="content-section" id="security">
+        <div class="content-header">
+          <h2>Security Settings</h2>
+          <p>Protect your AutoPurge settings with a password</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>🔐</i>Password Protection</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="passwordEnabledToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Enable Password Protection
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Require password to access AutoPurge settings
+              </p>
+            </div>
+            
+            <div id="passwordSettings" style="display: none;">
+              <div class="form-group">
+                <label for="currentPasswordInput">Current Password</label>
+                <input type="password" id="currentPasswordInput" class="form-control" placeholder="Enter current password">
+              </div>
+              
+              <div class="form-group">
+                <label for="newPasswordInput">New Password</label>
+                <input type="password" id="newPasswordInput" class="form-control" placeholder="Enter new password">
+              </div>
+              
+              <div class="form-group">
+                <label for="confirmPasswordInput">Confirm Password</label>
+                <input type="password" id="confirmPasswordInput" class="form-control" placeholder="Confirm new password">
+              </div>
+              
+              <button class="btn btn-primary" id="updatePasswordBtn">Update Password</button>
+              <button class="btn btn-secondary" id="removePasswordBtn">Remove Password</button>
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>🔒</i>Security Information</h3>
+            <p style="margin-bottom: 15px; color: #7f8c8d;">
+              Your password is encrypted and stored locally on your device. 
+              We cannot recover your password if you forget it.
+            </p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #3498db;">
+              <p style="margin: 0; font-size: 14px; color: #2c3e50;">
+                <strong>Security Tips:</strong><br>
+                • Use a strong, unique password<br>
+                • Don't share your password with others<br>
+                • Consider using a password manager
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Records Section -->
+      <div class="content-section" id="history">
+        <div class="content-header">
+          <h2>History Records</h2>
+          <p>View and manage deleted browsing history records</p>
+        </div>
+        
+        <div class="content-body">
+          <div class="section-card">
+            <h3><i>📜</i>Deleted History Records</h3>
+            <div style="margin-bottom: 20px;">
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                <button class="btn btn-primary" id="refreshHistoryBtn">Refresh</button>
+                <button class="btn btn-secondary" id="exportHistoryBtn">Export</button>
+                <button class="btn btn-warning" id="clearHistoryBtn">Clear All</button>
+                <button class="btn btn-success" id="reloadDomainsBtn">Reload Domains</button>
+              </div>
+              
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                <label for="historyFilter">Filter by:</label>
+                <select id="historyFilter" class="form-control" style="width: auto;">
+                  <option value="all">All Records</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                </select>
+                <input type="text" id="historySearch" class="form-control" placeholder="Search URLs or titles..." style="flex: 1;">
+              </div>
+            </div>
+            
+            <div id="historyStats" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <div style="text-align: center;">
+                  <div style="font-size: 24px; font-weight: bold; color: #3498db;" id="totalRecords">0</div>
+                  <div style="font-size: 12px; color: #7f8c8d;">Total Records</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 24px; font-weight: bold; color: #27ae60;" id="todayRecords">0</div>
+                  <div style="font-size: 12px; color: #7f8c8d;">Today</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 24px; font-weight: bold; color: #f39c12;" id="weekRecords">0</div>
+                  <div style="font-size: 12px; color: #7f8c8d;">This Week</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" id="storageUsed">0 MB</div>
+                  <div style="font-size: 12px; color: #7f8c8d;">Storage Used</div>
+                </div>
+              </div>
+            </div>
+            
+            <div id="historyList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; background: #f8f9fa;">
+              <div style="padding: 20px; text-align: center; color: #7f8c8d;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📜</div>
+                <div>No history records found</div>
+                <div style="font-size: 12px; margin-top: 5px;">Deleted browsing history will appear here</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="section-card">
+            <h3><i>⚙️</i>History Settings</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="autoRecordToggle" class="toggle-switch">
+                <span class="slider"></span>
+                Auto Record Deletions
+              </label>
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px; margin-left: 62px;">
+                Automatically record all deleted browsing history
+              </p>
+            </div>
+            
+            <div class="form-group">
+              <label for="maxRecordsInput">Maximum Records</label>
+              <input type="number" id="maxRecordsInput" class="form-control" min="100" max="10000" value="1000">
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">
+                Maximum number of records to keep (older records will be automatically deleted)
+              </p>
+            </div>
+            
+            <div class="form-group">
+              <label for="retentionDaysInput">Retention Period (days)</label>
+              <input type="number" id="retentionDaysInput" class="form-control" min="1" max="365" value="30">
+              <p style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">
+                How long to keep history records before auto-deletion
+              </p>
             </div>
           </div>
         </div>

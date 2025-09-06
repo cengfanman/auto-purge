@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge 选项页面测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 AutoPurge 选项页面测试</h1>
+    
+    <div class="test-section">
+        <h2>📋 测试步骤</h2>
+        <ol>
+            <li>点击下面的按钮打开选项页面</li>
+            <li>检查页面是否正常显示内容</li>
+            <li>点击左侧导航菜单测试切换功能</li>
+            <li>特别测试 "History Records" 和 "Security" 页面</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚀 快速测试</h2>
+        <button class="test-button" onclick="openOptionsPage()">打开选项页面</button>
+        <button class="test-button" onclick="testExtension()">测试扩展功能</button>
+        <button class="test-button" onclick="checkConsole()">检查控制台</button>
+        <div id="testStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 测试结果</h2>
+        <div id="testResults">
+            <div class="status info">等待测试...</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔍 内嵌测试页面</h2>
+        <p>如果上面的按钮不工作，可以直接在这里查看选项页面：</p>
+        <iframe id="optionsFrame" src="extension/options.html"></iframe>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('testStatus');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function addTestResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `status ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function openOptionsPage() {
+            try {
+                showStatus('正在打开选项页面...', 'info');
+                
+                // 尝试通过扩展 API 打开选项页面
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    chrome.runtime.openOptionsPage();
+                    addTestResult('✅ 通过扩展 API 打开选项页面', 'success');
+                } else {
+                    // 如果扩展 API 不可用，直接打开文件
+                    window.open('extension/options.html', '_blank');
+                    addTestResult('✅ 直接打开选项页面文件', 'success');
+                }
+                
+                showStatus('选项页面已打开', 'success');
+                
+            } catch (error) {
+                console.error('打开选项页面失败:', error);
+                showStatus('❌ 打开选项页面失败: ' + error.message, 'error');
+                addTestResult('❌ 打开选项页面失败: ' + error.message, 'error');
+            }
+        }
+        
+        async function testExtension() {
+            try {
+                showStatus('正在测试扩展功能...', 'info');
+                
+                if (typeof chrome === 'undefined' || !chrome.runtime) {
+                    throw new Error('Chrome 扩展 API 不可用');
+                }
+                
+                // 测试扩展是否响应
+                const response = await chrome.runtime.sendMessage({ action: 'getConfig' });
+                addTestResult('✅ 扩展响应正常', 'success');
+                
+                // 测试配置加载
+                if (response) {
+                    addTestResult(`✅ 配置加载成功: enabled=${response.enabled}`, 'success');
+                } else {
+                    addTestResult('⚠️ 配置为空', 'error');
+                }
+                
+                // 测试历史记录设置
+                const historySettings = await chrome.storage.local.get(['historySettings']);
+                if (historySettings.historySettings) {
+                    addTestResult('✅ 历史记录设置存在', 'success');
+                } else {
+                    addTestResult('⚠️ 历史记录设置不存在', 'error');
+                }
+                
+                showStatus('扩展功能测试完成', 'success');
+                
+            } catch (error) {
+                console.error('扩展功能测试失败:', error);
+                showStatus('❌ 扩展功能测试失败: ' + error.message, 'error');
+                addTestResult('❌ 扩展功能测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        function checkConsole() {
+            showStatus('请检查浏览器控制台中的日志信息', 'info');
+            addTestResult('📋 请检查浏览器控制台 (F12) 中的日志信息', 'info');
+            
+            // 尝试访问 iframe 中的调试函数
+            try {
+                const iframe = document.getElementById('optionsFrame');
+                if (iframe.contentWindow && iframe.contentWindow.debugOptions) {
+                    addTestResult('✅ 调试函数可用', 'success');
+                    console.log('可用的调试函数:', Object.keys(iframe.contentWindow.debugOptions));
+                } else {
+                    addTestResult('⚠️ 调试函数不可用，可能 iframe 未完全加载', 'error');
+                }
+            } catch (error) {
+                addTestResult('⚠️ 无法访问 iframe 内容: ' + error.message, 'error');
+            }
+        }
+        
+        // 页面加载时自动运行一些测试
+        window.addEventListener('load', () => {
+            addTestResult('📄 测试页面已加载', 'info');
+            
+            // 检查扩展是否可用
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                addTestResult('✅ Chrome 扩展 API 可用', 'success');
+            } else {
+                addTestResult('⚠️ Chrome 扩展 API 不可用，可能不在扩展环境中运行', 'error');
+            }
+        });
+        
+        // 监听 iframe 加载完成
+        document.getElementById('optionsFrame').addEventListener('load', () => {
+            addTestResult('📄 选项页面 iframe 已加载', 'info');
+        });
+    </script>
+</body>
+</html>

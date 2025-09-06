@@ -72,7 +72,7 @@ async function loadPresetDomains() {
     const response = await fetch(chrome.runtime.getURL('data/preset-domains.json'));
     const data = await response.json();
     presetDomains = data.domains || [];
-    console.log(`Loaded ${presetDomains.length} preset domains`);
+    console.log(`Loaded ${presetDomains.length} preset domains:`, presetDomains);
   } catch (error) {
     console.error('Failed to load preset domains:', error);
     presetDomains = [];
@@ -81,37 +81,49 @@ async function loadPresetDomains() {
 
 // Enhanced domain matching with protocol filtering and subdomain support
 function shouldPurgeDomain(url) {
-  if (!config.enabled) return false;
+  if (!config.enabled) {
+    console.log('AutoPurge is disabled');
+    return false;
+  }
   
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
     
+    console.log('Checking URL for deletion:', url, 'hostname:', hostname);
+    
     // Skip restricted protocols
     const restrictedProtocols = ['chrome:', 'chrome-extension:', 'file:', 'moz-extension:', 'edge:', 'about:', 'data:'];
     if (restrictedProtocols.some(protocol => urlObj.protocol.startsWith(protocol))) {
+      console.log('Skipping restricted protocol:', urlObj.protocol);
       return false;
     }
     
     // Only allow HTTP/HTTPS
     if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      console.log('Skipping non-HTTP protocol:', urlObj.protocol);
       return false;
     }
     
     // Check against preset domains
+    console.log('Checking preset domains:', presetDomains);
     for (const domain of presetDomains) {
       if (hostname === domain || hostname.endsWith('.' + domain)) {
+        console.log('Match found in preset domains:', domain);
         return true;
       }
     }
     
     // Check against user domains
+    console.log('Checking user domains:', config.userDomains);
     for (const domain of config.userDomains) {
       if (hostname === domain || hostname.endsWith('.' + domain)) {
+        console.log('Match found in user domains:', domain);
         return true;
       }
     }
     
+    console.log('No match found for:', hostname);
     return false;
   } catch (error) {
     console.error('Error parsing URL:', url, error);
@@ -121,11 +133,15 @@ function shouldPurgeDomain(url) {
 
 // Schedule URL for deletion with enhanced pipeline
 async function scheduleDelete(url, tabId = null) {
+  console.log('scheduleDelete called for:', url);
   const isMatched = shouldPurgeDomain(url);
+  console.log('Domain match result:', isMatched);
+  
   if (!isMatched) return false;
   
   // Check if already scheduled
   if (deletionQueue.has(url)) {
+    console.log('URL already in deletion queue, updating...');
     const existing = deletionQueue.get(url);
     clearTimeout(existing.timeoutId);
     
@@ -135,6 +151,7 @@ async function scheduleDelete(url, tabId = null) {
     
     // Schedule deletion after delay
     existing.timeoutId = setTimeout(async () => {
+      console.log('Executing scheduled deletion for:', url);
       await deleteFromHistory(url);
       deletionQueue.delete(url);
     }, config.delaySec * 1000);
@@ -153,6 +170,7 @@ async function scheduleDelete(url, tabId = null) {
   
   // Schedule deletion after delay
   deletionEntry.timeoutId = setTimeout(async () => {
+    console.log('Executing scheduled deletion for:', url);
     await deleteFromHistory(url);
     deletionQueue.delete(url);
   }, config.delaySec * 1000);
@@ -171,7 +189,30 @@ async function scheduleDelete(url, tabId = null) {
 // Delete URL from history with retry logic
 async function deleteFromHistory(url) {
   try {
+    // Get page title before deletion for history record
+    let pageTitle = '';
+    try {
+      const tabs = await chrome.tabs.query({ url: url });
+      if (tabs && tabs.length > 0) {
+        pageTitle = tabs[0].title || '';
+      }
+    } catch (titleError) {
+      console.log('Could not get page title:', titleError.message);
+    }
+    
+    // Extract domain from URL
+    let domain = '';
+    try {
+      const urlObj = new URL(url);
+      domain = urlObj.hostname;
+    } catch (urlError) {
+      console.log('Could not extract domain from URL:', urlError.message);
+    }
+    
     await chrome.history.deleteUrl({ url });
+    
+    // Record the deletion in history records
+    await recordHistoryDeletion(url, pageTitle, domain);
     
     // Update statistics
     config.usage.deletionsTotal++;
@@ -193,6 +234,9 @@ async function deleteFromHistory(url) {
         try {
           await chrome.history.deleteUrl({ url });
           console.log(`Retry successful for: ${url}`);
+          
+          // Record the deletion in history records
+          await recordHistoryDeletion(url, '', domain);
           
           // Update statistics
           config.usage.deletionsTotal++;
@@ -418,6 +462,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })();
       return true; // Keep message channel open for async response
       
+    case 'reloadPresetDomains':
+      (async () => {
+        try {
+          await loadPresetDomains();
+          sendResponse({ success: true, domains: presetDomains });
+        } catch (error) {
+          console.error('Failed to reload preset domains:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      })();
+      return true; // Keep message channel open for async response
+      
     default:
       sendResponse({ error: 'Unknown action' });
   }
@@ -446,6 +502,64 @@ function resetDailyStats() {
 
 // Initialize daily stats reset
 resetDailyStats();
+
+// Record history deletion for tracking
+async function recordHistoryDeletion(url, title, domain) {
+  try {
+    console.log('recordHistoryDeletion called for:', url, 'title:', title, 'domain:', domain);
+    
+    // Check if auto recording is enabled
+    const settings = await chrome.storage.local.get(['historySettings']);
+    const historySettings = settings.historySettings || { autoRecord: true, maxRecords: 1000, retentionDays: 30 };
+    
+    console.log('History settings:', historySettings);
+    
+    if (!historySettings.autoRecord) {
+      console.log('Auto recording is disabled, skipping record');
+      return; // Auto recording is disabled
+    }
+    
+    // Load existing history records
+    const stored = await chrome.storage.local.get(['historyRecords']);
+    let historyRecords = stored.historyRecords || [];
+    
+    console.log('Existing history records count:', historyRecords.length);
+    
+    // Create new record
+    const record = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      url: url,
+      title: title || '',
+      domain: domain || '',
+      deletedAt: Date.now()
+    };
+    
+    console.log('Created new record:', record);
+    
+    // Add to beginning of array
+    historyRecords.unshift(record);
+    
+    // Apply retention policy
+    const retentionTime = historySettings.retentionDays * 24 * 60 * 60 * 1000;
+    const cutoffTime = Date.now() - retentionTime;
+    historyRecords = historyRecords.filter(record => record.deletedAt > cutoffTime);
+    
+    // Limit to max records
+    if (historyRecords.length > historySettings.maxRecords) {
+      historyRecords = historyRecords.slice(0, historySettings.maxRecords);
+    }
+    
+    console.log('Final history records count:', historyRecords.length);
+    
+    // Save updated records
+    await chrome.storage.local.set({ historyRecords: historyRecords });
+    
+    console.log(`History deletion recorded successfully: ${url}`);
+    
+  } catch (error) {
+    console.error('Failed to record history deletion:', error);
+  }
+}
 
 // Reload configuration when storage changes
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
