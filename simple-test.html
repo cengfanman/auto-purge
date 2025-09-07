@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge 简化测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 AutoPurge 简化测试</h1>
+    
+    <div class="test-container">
+        <h2>测试目标</h2>
+        <p>将复杂的历史记录和 Security 模块简化为简单的 "TEST" 文本，用于逐步调试显示问题。</p>
+        <ul>
+            <li>✅ 移除了复杂的历史记录功能</li>
+            <li>✅ 移除了复杂的 Security 功能</li>
+            <li>✅ 移除了复杂的 Advanced Features 功能</li>
+            <li>✅ 替换为简单的测试文本</li>
+            <li>✅ 添加了调试信息显示</li>
+            <li>✅ 简化了 JavaScript 代码</li>
+        </ul>
+    </div>
+    
+    <div class="test-container">
+        <h2>测试步骤</h2>
+        <ol>
+            <li>点击"打开选项页面"按钮</li>
+            <li>点击左侧的"History Records"菜单，检查是否显示"TEST"文本</li>
+            <li>点击左侧的"Security"菜单，检查是否显示"SECURITY TEST"文本</li>
+            <li>点击左侧的"Advanced Features"菜单，检查是否显示"ADVANCED FEATURES TEST"文本</li>
+            <li>如果看不到内容，在控制台运行调试命令</li>
+        </ol>
+        
+        <button class="test-button" onclick="openOptions()">打开选项页面</button>
+        <button class="test-button" onclick="testNavigation()">测试导航</button>
+        <button class="test-button" onclick="runDebug()">运行调试</button>
+        <div id="testResult"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>内嵌测试</h2>
+        <p>如果上面的按钮不工作，可以直接在这里查看简化后的选项页面：</p>
+        <iframe id="optionsFrame" src="extension/options.html"></iframe>
+    </div>
+    
+    <div class="test-container">
+        <h2>调试命令</h2>
+        <p>在选项页面的控制台中运行以下命令：</p>
+        <div class="debug-info">
+// 检查页面状态
+window.debugOptions.checkPageStatus();
+
+// 强制显示所有内容
+window.debugOptions.forceShowAll();
+
+// 测试历史记录功能
+window.debugOptions.testHistoryRecords();
+
+// 检查关键元素
+console.log('History - currentTimeSpan:', document.getElementById('currentTime'));
+console.log('History - pageLoadedSpan:', document.getElementById('pageLoaded'));
+console.log('Security - securityCurrentTime:', document.getElementById('securityCurrentTime'));
+console.log('Security - securityPageLoaded:', document.getElementById('securityPageLoaded'));
+console.log('Features - featuresCurrentTime:', document.getElementById('featuresCurrentTime'));
+console.log('Features - featuresPageLoaded:', document.getElementById('featuresPageLoaded'));
+
+// 测试导航切换
+const historySection = document.getElementById('history');
+const securitySection = document.getElementById('security');
+const featuresSection = document.getElementById('features');
+console.log('History section:', historySection);
+console.log('Security section:', securitySection);
+console.log('Features section:', featuresSection);
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'status') {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        function openOptions() {
+            try {
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    chrome.runtime.openOptionsPage();
+                    showResult('✅ 选项页面已打开，请点击 "History Records" 菜单');
+                } else {
+                    window.open('extension/options.html', '_blank');
+                    showResult('✅ 选项页面已在新标签页中打开');
+                }
+            } catch (error) {
+                showResult('❌ 打开失败: ' + error.message, 'error');
+            }
+        }
+        
+        function testNavigation() {
+            showResult('📋 请手动测试：1. 点击 History Records 菜单 2. 点击 Security 菜单 3. 点击 Advanced Features 菜单 4. 检查是否显示 TEST 文本');
+        }
+        
+        function runDebug() {
+            showResult('📋 请在选项页面的控制台中运行调试命令（见下方）');
+        }
+        
+        // 页面加载完成后的提示
+        window.addEventListener('load', () => {
+            showResult('📄 简化测试页面已加载，History Records、Security 和 Advanced Features 模块已简化为 TEST 文本');
+        });
+        
+        // 监听 iframe 加载完成
+        document.getElementById('optionsFrame').addEventListener('load', () => {
+            console.log('选项页面 iframe 已加载');
+        });
+    </script>
+</body>
+</html>

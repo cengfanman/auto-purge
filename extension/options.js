@@ -76,31 +76,17 @@ let resetBtn = null;
 let exportBtn = null;
 let importBtn = null;
 
-// Password protection elements
-let passwordEnabledToggle = null;
-let passwordSettings = null;
-let currentPasswordInput = null;
-let newPasswordInput = null;
-let confirmPasswordInput = null;
-let updatePasswordBtn = null;
-let removePasswordBtn = null;
+// Password protection elements (simplified for debugging)
+let securityCurrentTimeSpan = null;
+let securityPageLoadedSpan = null;
 
-// History records elements
-let refreshHistoryBtn = null;
-let exportHistoryBtn = null;
-let clearHistoryBtn = null;
-let historyFilter = null;
-let historySearch = null;
-let historyStats = null;
-let historyList = null;
-let totalRecords = null;
-let todayRecords = null;
-let weekRecords = null;
-let storageUsed = null;
-let autoRecordToggle = null;
-let maxRecordsInput = null;
-let retentionDaysInput = null;
-let reloadDomainsBtn = null;
+// History records elements (simplified for debugging)
+let currentTimeSpan = null;
+let pageLoadedSpan = null;
+
+// Advanced features elements (simplified for debugging)
+let featuresCurrentTimeSpan = null;
+let featuresPageLoadedSpan = null;
 
 // 获取 DOM 元素的函数
 function getDOMElements() {
@@ -128,39 +114,29 @@ function getDOMElements() {
   exportBtn = document.getElementById('exportBtn');
   importBtn = document.getElementById('importBtn');
   
-  // Password protection elements
-  passwordEnabledToggle = document.getElementById('passwordEnabledToggle');
-  passwordSettings = document.getElementById('passwordSettings');
-  currentPasswordInput = document.getElementById('currentPasswordInput');
-  newPasswordInput = document.getElementById('newPasswordInput');
-  confirmPasswordInput = document.getElementById('confirmPasswordInput');
-  updatePasswordBtn = document.getElementById('updatePasswordBtn');
-  removePasswordBtn = document.getElementById('removePasswordBtn');
+  // Password protection elements (simplified for debugging)
+  securityCurrentTimeSpan = document.getElementById('securityCurrentTime');
+  securityPageLoadedSpan = document.getElementById('securityPageLoaded');
   
-  // History records elements
-  refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
-  exportHistoryBtn = document.getElementById('exportHistoryBtn');
-  clearHistoryBtn = document.getElementById('clearHistoryBtn');
-  historyFilter = document.getElementById('historyFilter');
-  historySearch = document.getElementById('historySearch');
-  historyStats = document.getElementById('historyStats');
-  historyList = document.getElementById('historyList');
-  totalRecords = document.getElementById('totalRecords');
-  todayRecords = document.getElementById('todayRecords');
-  weekRecords = document.getElementById('weekRecords');
-  storageUsed = document.getElementById('storageUsed');
-  autoRecordToggle = document.getElementById('autoRecordToggle');
-  maxRecordsInput = document.getElementById('maxRecordsInput');
-  retentionDaysInput = document.getElementById('retentionDaysInput');
-  reloadDomainsBtn = document.getElementById('reloadDomainsBtn');
+  // History records elements (simplified for debugging)
+  currentTimeSpan = document.getElementById('currentTime');
+  pageLoadedSpan = document.getElementById('pageLoaded');
+  
+  // Advanced features elements (simplified for debugging)
+  featuresCurrentTimeSpan = document.getElementById('featuresCurrentTime');
+  featuresPageLoadedSpan = document.getElementById('featuresPageLoaded');
   
   console.log('DOM elements found:');
   console.log('presetDomainsList:', presetDomainsList);
   console.log('customDomainsList:', customDomainsList);
   console.log('newDomainInput:', newDomainInput);
   console.log('addDomainBtn:', addDomainBtn);
-  console.log('refreshHistoryBtn:', refreshHistoryBtn);
-  console.log('historyList:', historyList);
+  console.log('currentTimeSpan:', currentTimeSpan);
+  console.log('pageLoadedSpan:', pageLoadedSpan);
+  console.log('securityCurrentTimeSpan:', securityCurrentTimeSpan);
+  console.log('securityPageLoadedSpan:', securityPageLoadedSpan);
+  console.log('featuresCurrentTimeSpan:', featuresCurrentTimeSpan);
+  console.log('featuresPageLoadedSpan:', featuresPageLoadedSpan);
   
   // 检查关键元素是否存在
   if (!presetDomainsList) {
@@ -169,8 +145,14 @@ function getDOMElements() {
   if (!customDomainsList) {
     console.error('customDomainsList not found!');
   }
-  if (!historyList) {
-    console.error('historyList not found!');
+  if (!currentTimeSpan) {
+    console.error('currentTimeSpan not found!');
+  }
+  if (!securityCurrentTimeSpan) {
+    console.error('securityCurrentTimeSpan not found!');
+  }
+  if (!featuresCurrentTimeSpan) {
+    console.error('featuresCurrentTimeSpan not found!');
   }
 }
 
@@ -496,16 +478,8 @@ function setupEventListeners() {
   if (updatePasswordBtn) updatePasswordBtn.addEventListener('click', updatePassword);
   if (removePasswordBtn) removePasswordBtn.addEventListener('click', removePassword);
   
-  // History records
-  if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
-  if (exportHistoryBtn) exportHistoryBtn.addEventListener('click', exportHistoryRecords);
-  if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistoryRecords);
-  if (historyFilter) historyFilter.addEventListener('change', filterHistoryRecords);
-  if (historySearch) historySearch.addEventListener('input', searchHistoryRecords);
-  if (autoRecordToggle) autoRecordToggle.addEventListener('change', updateHistorySettings);
-  if (maxRecordsInput) maxRecordsInput.addEventListener('change', updateHistorySettings);
-  if (retentionDaysInput) retentionDaysInput.addEventListener('change', updateHistorySettings);
-  if (reloadDomainsBtn) reloadDomainsBtn.addEventListener('click', reloadPresetDomains);
+  // History records (simplified for debugging)
+  // No complex event listeners for now
   
   console.log('Event listeners setup complete');
 }
@@ -541,8 +515,8 @@ function updateUI() {
   // Update password protection UI
   updatePasswordUI();
   
-  // Update history records UI
-  updateHistoryUI();
+  // Update history records UI (simplified for debugging)
+  updateTestInfo();
   
   // 添加调试信息
   console.log('UI updated, preset domains:', presetDomains);
@@ -1316,6 +1290,60 @@ async function removePassword() {
   }
 }
 
+// ==================== 简化测试功能 ====================
+
+// 更新测试信息
+function updateTestInfo() {
+  console.log('Updating test info...');
+  
+  // History Records 页面
+  if (currentTimeSpan) {
+    currentTimeSpan.textContent = new Date().toLocaleString();
+    console.log('✅ History current time updated');
+  } else {
+    console.log('❌ currentTimeSpan not found');
+  }
+  
+  if (pageLoadedSpan) {
+    pageLoadedSpan.textContent = new Date().toLocaleString();
+    console.log('✅ History page loaded time updated');
+  } else {
+    console.log('❌ pageLoadedSpan not found');
+  }
+  
+  // Security 页面
+  if (securityCurrentTimeSpan) {
+    securityCurrentTimeSpan.textContent = new Date().toLocaleString();
+    console.log('✅ Security current time updated');
+  } else {
+    console.log('❌ securityCurrentTimeSpan not found');
+  }
+  
+  if (securityPageLoadedSpan) {
+    securityPageLoadedSpan.textContent = new Date().toLocaleString();
+    console.log('✅ Security page loaded time updated');
+  } else {
+    console.log('❌ securityPageLoadedSpan not found');
+  }
+  
+  // Advanced Features 页面
+  if (featuresCurrentTimeSpan) {
+    featuresCurrentTimeSpan.textContent = new Date().toLocaleString();
+    console.log('✅ Features current time updated');
+  } else {
+    console.log('❌ featuresCurrentTimeSpan not found');
+  }
+  
+  if (featuresPageLoadedSpan) {
+    featuresPageLoadedSpan.textContent = new Date().toLocaleString();
+    console.log('✅ Features page loaded time updated');
+  } else {
+    console.log('❌ featuresPageLoadedSpan not found');
+  }
+  
+  console.log('Test info update complete');
+}
+
 // ==================== 历史记录功能实现 ====================
 
 // 更新历史记录 UI
@@ -1682,8 +1710,9 @@ window.debugOptions = {
     
     // 检查关键元素
     const keyElements = [
-      'presetDomainsList', 'customDomainsList', 'historyList', 
-      'refreshHistoryBtn', 'autoRecordToggle'
+      'presetDomainsList', 'customDomainsList', 'currentTimeSpan', 
+      'pageLoadedSpan', 'securityCurrentTime', 'securityPageLoaded',
+      'featuresCurrentTime', 'featuresPageLoaded'
     ];
     
     keyElements.forEach(id => {
@@ -1713,7 +1742,7 @@ window.debugOptions = {
   // 测试历史记录功能
   testHistoryRecords: () => {
     console.log('测试历史记录功能...');
-    updateHistoryUI();
+    updateTestInfo();
     console.log('历史记录功能测试完成');
   }
 };
