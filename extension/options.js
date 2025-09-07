@@ -76,10 +76,12 @@ let importBtn = null;
 // Password protection elements
 let passwordEnabledToggle = null;
 let passwordSettings = null;
+let currentPasswordDiv = null;
 let currentPasswordInput = null;
 let newPasswordInput = null;
 let confirmPasswordInput = null;
 let updatePasswordBtn = null;
+let disablePasswordBtn = null;
 let removePasswordBtn = null;
 
 // History records elements
@@ -143,10 +145,12 @@ function getDOMElements() {
   // Password protection elements
   passwordEnabledToggle = document.getElementById('passwordEnabledToggle');
   passwordSettings = document.getElementById('passwordSettings');
+  currentPasswordDiv = document.getElementById('currentPasswordDiv');
   currentPasswordInput = document.getElementById('currentPasswordInput');
   newPasswordInput = document.getElementById('newPasswordInput');
   confirmPasswordInput = document.getElementById('confirmPasswordInput');
   updatePasswordBtn = document.getElementById('updatePasswordBtn');
+  disablePasswordBtn = document.getElementById('disablePasswordBtn');
   removePasswordBtn = document.getElementById('removePasswordBtn');
   
   // History records elements
@@ -528,6 +532,7 @@ function setupEventListeners() {
   // Password protection
   if (passwordEnabledToggle) passwordEnabledToggle.addEventListener('change', togglePasswordProtection);
   if (updatePasswordBtn) updatePasswordBtn.addEventListener('click', updatePassword);
+  if (disablePasswordBtn) disablePasswordBtn.addEventListener('click', disablePasswordProtection);
   if (removePasswordBtn) removePasswordBtn.addEventListener('click', removePassword);
   
   // History records
@@ -1209,16 +1214,30 @@ async function verifyPassword(password, hash, salt) {
 }
 
 // 更新密码保护 UI
-function updatePasswordUI() {
+async function updatePasswordUI() {
   if (!passwordEnabledToggle || !passwordSettings) return;
   
-  passwordEnabledToggle.checked = passwordConfig.enabled;
-  passwordSettings.style.display = passwordConfig.enabled ? 'block' : 'none';
-  
-  // 清空密码输入框
-  if (currentPasswordInput) currentPasswordInput.value = '';
-  if (newPasswordInput) newPasswordInput.value = '';
-  if (confirmPasswordInput) confirmPasswordInput.value = '';
+  try {
+    // 检查是否已有密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    const hasPassword = !!stored.passwordHash;
+    
+    passwordEnabledToggle.checked = hasPassword;
+    passwordSettings.style.display = hasPassword ? 'block' : 'none';
+    
+    if (currentPasswordDiv) {
+      currentPasswordDiv.style.display = hasPassword ? 'block' : 'none';
+    }
+    
+    // 清空密码输入框
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    
+    console.log('Password protection UI updated, has password:', hasPassword);
+  } catch (error) {
+    console.error('Failed to update password UI:', error);
+  }
 }
 
 // 切换密码保护
@@ -1526,25 +1545,31 @@ async function togglePasswordProtection() {
   if (!passwordEnabledToggle || !passwordSettings) return;
   
   const enabled = passwordEnabledToggle.checked;
-  passwordSettings.style.display = enabled ? 'block' : 'none';
   
   if (enabled) {
+    // 启用密码保护
+    passwordSettings.style.display = 'block';
+    
     // 检查是否已有密码
     const stored = await chrome.storage.local.get(['passwordHash']);
     if (stored.passwordHash) {
-      // 已有密码，隐藏当前密码输入
-      if (currentPasswordInput) {
-        currentPasswordInput.style.display = 'none';
+      // 已有密码，显示当前密码输入
+      if (currentPasswordDiv) {
+        currentPasswordDiv.style.display = 'block';
       }
     } else {
-      // 没有密码，显示设置新密码
-      if (currentPasswordInput) {
-        currentPasswordInput.style.display = 'block';
+      // 没有密码，隐藏当前密码输入
+      if (currentPasswordDiv) {
+        currentPasswordDiv.style.display = 'none';
       }
     }
+    
+    showMessage('Password protection enabled', 'success');
+  } else {
+    // 禁用密码保护（但保留密码数据）
+    passwordSettings.style.display = 'none';
+    showMessage('Password protection disabled (password is kept)', 'info');
   }
-  
-  showMessage(`Password protection ${enabled ? 'enabled' : 'disabled'}`, 'success');
 }
 
 // 更新密码
@@ -1553,6 +1578,7 @@ async function updatePassword() {
   
   const newPassword = newPasswordInput.value;
   const confirmPassword = confirmPasswordInput.value;
+  const currentPassword = currentPasswordInput ? currentPasswordInput.value : '';
   
   if (!newPassword || !confirmPassword) {
     showMessage('Please fill in all password fields', 'error');
@@ -1570,7 +1596,24 @@ async function updatePassword() {
   }
   
   try {
-    // 简单的密码哈希（实际应用中应使用更安全的方法）
+    // 检查是否已有密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    
+    if (stored.passwordHash) {
+      // 已有密码，需要验证当前密码
+      if (!currentPassword) {
+        showMessage('Please enter current password', 'error');
+        return;
+      }
+      
+      const currentHash = btoa(currentPassword);
+      if (currentHash !== stored.passwordHash) {
+        showMessage('Current password is incorrect', 'error');
+        return;
+      }
+    }
+    
+    // 设置新密码
     const passwordHash = btoa(newPassword);
     await chrome.storage.local.set({ passwordHash: passwordHash });
     
@@ -1579,6 +1622,11 @@ async function updatePassword() {
     confirmPasswordInput.value = '';
     if (currentPasswordInput) currentPasswordInput.value = '';
     
+    // 更新 UI，现在显示当前密码字段
+    if (currentPasswordDiv) {
+      currentPasswordDiv.style.display = 'block';
+    }
+    
     showMessage('Password updated successfully', 'success');
   } catch (error) {
     console.error('Failed to update password:', error);
@@ -1586,10 +1634,81 @@ async function updatePassword() {
   }
 }
 
-// 移除密码
+// 禁用密码保护（保留密码数据）
+async function disablePasswordProtection() {
+  if (!currentPasswordInput) {
+    showMessage('Current password input not found', 'error');
+    return;
+  }
+  
+  const currentPassword = currentPasswordInput.value;
+  if (!currentPassword) {
+    showMessage('Please enter current password to disable protection', 'error');
+    return;
+  }
+  
+  try {
+    // 验证当前密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    if (!stored.passwordHash) {
+      showMessage('No password found to verify', 'error');
+      return;
+    }
+    
+    const currentHash = btoa(currentPassword);
+    if (currentHash !== stored.passwordHash) {
+      showMessage('Current password is incorrect', 'error');
+      return;
+    }
+    
+    if (confirm('Are you sure you want to disable password protection? You can re-enable it later.')) {
+      // 只禁用保护，不删除密码数据
+      if (passwordEnabledToggle) {
+        passwordEnabledToggle.checked = false;
+      }
+      if (passwordSettings) {
+        passwordSettings.style.display = 'none';
+      }
+      
+      // 清空当前密码输入
+      currentPasswordInput.value = '';
+      
+      showMessage('Password protection disabled', 'success');
+    }
+  } catch (error) {
+    console.error('Failed to disable password protection:', error);
+    showMessage('Failed to disable password protection', 'error');
+  }
+}
+
+// 删除密码（完全清除密码数据）
 async function removePassword() {
-  if (confirm('Are you sure you want to remove password protection?')) {
-    try {
+  if (!currentPasswordInput) {
+    showMessage('Current password input not found', 'error');
+    return;
+  }
+  
+  const currentPassword = currentPasswordInput.value;
+  if (!currentPassword) {
+    showMessage('Please enter current password to delete password', 'error');
+    return;
+  }
+  
+  try {
+    // 验证当前密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    if (!stored.passwordHash) {
+      showMessage('No password found to verify', 'error');
+      return;
+    }
+    
+    const currentHash = btoa(currentPassword);
+    if (currentHash !== stored.passwordHash) {
+      showMessage('Current password is incorrect', 'error');
+      return;
+    }
+    
+    if (confirm('Are you sure you want to permanently delete the password? This action cannot be undone.')) {
       await chrome.storage.local.remove(['passwordHash']);
       if (passwordEnabledToggle) {
         passwordEnabledToggle.checked = false;
@@ -1597,11 +1716,20 @@ async function removePassword() {
       if (passwordSettings) {
         passwordSettings.style.display = 'none';
       }
-      showMessage('Password protection removed', 'success');
-    } catch (error) {
-      console.error('Failed to remove password:', error);
-      showMessage('Failed to remove password', 'error');
+      if (currentPasswordDiv) {
+        currentPasswordDiv.style.display = 'none';
+      }
+      
+      // 清空所有密码输入
+      if (currentPasswordInput) currentPasswordInput.value = '';
+      if (newPasswordInput) newPasswordInput.value = '';
+      if (confirmPasswordInput) confirmPasswordInput.value = '';
+      
+      showMessage('Password permanently deleted', 'success');
     }
+  } catch (error) {
+    console.error('Failed to remove password:', error);
+    showMessage('Failed to remove password', 'error');
   }
 }
 
