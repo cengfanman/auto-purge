@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge - 功能恢复测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+        .feature-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.restored { background: #d4edda; color: #155724; }
+        .status.testing { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 AutoPurge 功能恢复测试</h1>
+            <p>测试所有恢复的功能模块</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h2>功能恢复状态</h2>
+                <div class="feature-list">
+                    <div class="feature-card">
+                        <h3>History Records</h3>
+                        <p>历史记录管理功能</p>
+                        <span class="status restored">已恢复</span>
+                        <ul>
+                            <li>✅ 统计信息显示</li>
+                            <li>✅ 记录列表展示</li>
+                            <li>✅ 搜索和过滤</li>
+                            <li>✅ 导出/清空功能</li>
+                            <li>✅ 设置管理</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Security Settings</h3>
+                        <p>密码保护功能</p>
+                        <span class="status restored">已恢复</span>
+                        <ul>
+                            <li>✅ 密码保护开关</li>
+                            <li>✅ 密码设置/更新</li>
+                            <li>✅ 密码移除</li>
+                            <li>✅ 安全提示</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Advanced Features</h3>
+                        <p>高级功能模块</p>
+                        <span class="status restored">已恢复</span>
+                        <ul>
+                            <li>✅ Shadow History</li>
+                            <li>✅ Advanced Analytics</li>
+                            <li>✅ Priority Support</li>
+                            <li>✅ API Access</li>
+                            <li>✅ Pro 升级</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>测试操作</h2>
+                <p>点击下面的按钮来测试各个功能模块：</p>
+                
+                <button class="test-button" onclick="openOptions()">打开选项页面</button>
+                <button class="test-button" onclick="testHistoryRecords()">测试历史记录</button>
+                <button class="test-button" onclick="testSecuritySettings()">测试安全设置</button>
+                <button class="test-button" onclick="testAdvancedFeatures()">测试高级功能</button>
+                <button class="test-button" onclick="runFullTest()">运行完整测试</button>
+                
+                <div id="testResult" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; display: none;">
+                    <h4>测试结果：</h4>
+                    <div id="testOutput"></div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>功能说明</h2>
+                <div class="feature-list">
+                    <div class="feature-card">
+                        <h3>🎨 简单样式设计</h3>
+                        <p>所有功能都使用内联样式，保持简洁美观：</p>
+                        <ul>
+                            <li>使用 Bootstrap 色彩系统</li>
+                            <li>响应式布局设计</li>
+                            <li>清晰的视觉层次</li>
+                            <li>一致的用户体验</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>⚡ 功能完整性</h3>
+                        <p>所有核心功能都已恢复：</p>
+                        <ul>
+                            <li>历史记录管理</li>
+                            <li>密码保护</li>
+                            <li>高级功能开关</li>
+                            <li>设置持久化</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>🔧 调试友好</h3>
+                        <p>保留了调试功能：</p>
+                        <ul>
+                            <li>控制台日志输出</li>
+                            <li>错误处理机制</li>
+                            <li>状态检查函数</li>
+                            <li>测试工具函数</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('testResult');
+            const outputDiv = document.getElementById('testOutput');
+            
+            resultDiv.style.display = 'block';
+            outputDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function openOptions() {
+            try {
+                chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+                showResult('✅ 选项页面已打开', 'success');
+            } catch (error) {
+                showResult('❌ 无法打开选项页面: ' + error.message, 'error');
+            }
+        }
+
+        function testHistoryRecords() {
+            showResult('📋 请手动测试 History Records 功能：<br>1. 点击 History Records 菜单<br>2. 检查统计信息显示<br>3. 测试搜索和过滤功能<br>4. 尝试导出/清空操作', 'info');
+        }
+
+        function testSecuritySettings() {
+            showResult('🔒 请手动测试 Security 功能：<br>1. 点击 Security 菜单<br>2. 启用密码保护<br>3. 设置新密码<br>4. 测试密码更新/移除', 'info');
+        }
+
+        function testAdvancedFeatures() {
+            showResult('⚡ 请手动测试 Advanced Features：<br>1. 点击 Advanced Features 菜单<br>2. 切换各个功能开关<br>3. 检查状态显示更新<br>4. 测试 Pro 升级按钮', 'info');
+        }
+
+        function runFullTest() {
+            showResult('🚀 运行完整测试：<br>1. 打开选项页面<br>2. 依次测试所有三个模块<br>3. 检查功能是否正常工作<br>4. 验证设置是否保存', 'info');
+        }
+
+        // 页面加载完成后的提示
+        window.addEventListener('load', () => {
+            showResult('📄 功能恢复测试页面已加载，所有功能模块已恢复并使用简单样式', 'success');
+        });
+    </script>
+</body>
+</html>

@@ -743,15 +743,65 @@
         
         <div class="content-body">
           <div class="section-card">
-            <h3>ADVANCED FEATURES TEST</h3>
-            <p>This is a simple test for the Advanced Features page.</p>
-            <p>If you can see this text, the Advanced Features page is working correctly.</p>
-            <div style="background: #f0f8ff; padding: 20px; margin: 20px 0; border-radius: 4px; border-left: 4px solid #3498db;">
-              <h4>Advanced Features Debug Info:</h4>
-              <p>Current time: <span id="featuresCurrentTime"></span></p>
-              <p>Page loaded: <span id="featuresPageLoaded"></span></p>
-              <p>Section ID: features</p>
-              <p>Status: <span style="color: #27ae60; font-weight: bold;">WORKING</span></p>
+            <h3>Privacy Features</h3>
+            
+            <!-- Shadow History -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #6f42c1;">
+              <h4>Shadow History (Pro)</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="shadowHistoryToggle" style="margin-right: 8px;"> Enable Shadow History
+              </label>
+              <p style="font-size: 14px; color: #666; margin: 5px 0;">Encrypted backup of deleted history for recovery</p>
+              <div style="background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d;">Status: <span id="shadowHistoryStatus">Disabled</span></p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">Encrypted Records: <span id="shadowHistoryCount">0</span></p>
+              </div>
+            </div>
+            
+            <!-- Advanced Analytics -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #20c997;">
+              <h4>Advanced Analytics (Pro)</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="analyticsToggle" style="margin-right: 8px;"> Enable Advanced Analytics
+              </label>
+              <p style="font-size: 14px; color: #666; margin: 5px 0;">Detailed usage statistics and insights</p>
+              <div style="background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d;">Status: <span id="analyticsStatus">Disabled</span></p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">Data Points: <span id="analyticsCount">0</span></p>
+              </div>
+            </div>
+            
+            <!-- Priority Support -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #fd7e14;">
+              <h4>Priority Support (Pro)</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="prioritySupportToggle" style="margin-right: 8px;"> Enable Priority Support
+              </label>
+              <p style="font-size: 14px; color: #666; margin: 5px 0;">Faster response times and dedicated support</p>
+              <div style="background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d;">Status: <span id="prioritySupportStatus">Disabled</span></p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">Response Time: <span id="prioritySupportTime">Standard</span></p>
+              </div>
+            </div>
+            
+            <!-- API Access -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #dc3545;">
+              <h4>API Access (Pro)</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="apiAccessToggle" style="margin-right: 8px;"> Enable API Access
+              </label>
+              <p style="font-size: 14px; color: #666; margin: 5px 0;">Programmatic access to AutoPurge features</p>
+              <div style="background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d;">Status: <span id="apiAccessStatus">Disabled</span></p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #6c757d;">API Key: <span id="apiKeyDisplay">Not Generated</span></p>
+              </div>
+            </div>
+            
+            <!-- Pro 升级提示 -->
+            <div style="background: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #ffc107;">
+              <h4>Upgrade to Pro</h4>
+              <p style="margin: 10px 0;">Unlock all advanced features with a Pro subscription</p>
+              <button id="upgradeToProBtn" style="padding: 10px 20px; background: #ffc107; color: #212529; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Upgrade Now</button>
             </div>
           </div>
         </div>
@@ -814,15 +864,52 @@
         
         <div class="content-body">
           <div class="section-card">
-            <h3>SECURITY TEST</h3>
-            <p>This is a simple test for the Security page.</p>
-            <p>If you can see this text, the Security page is working correctly.</p>
-            <div style="background: #e8f4fd; padding: 20px; margin: 20px 0; border-radius: 4px; border-left: 4px solid #3498db;">
-              <h4>Security Debug Info:</h4>
-              <p>Current time: <span id="securityCurrentTime"></span></p>
-              <p>Page loaded: <span id="securityPageLoaded"></span></p>
-              <p>Section ID: security</p>
-              <p>Status: <span style="color: #27ae60; font-weight: bold;">WORKING</span></p>
+            <h3>Password Protection</h3>
+            
+            <!-- 密码保护开关 -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #ffc107;">
+              <h4>Password Protection</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="passwordEnabledToggle" style="margin-right: 8px;"> Enable Password Protection
+              </label>
+              <p style="font-size: 14px; color: #666; margin: 5px 0;">Require password to access AutoPurge settings</p>
+            </div>
+            
+            <!-- 密码设置 -->
+            <div id="passwordSettings" style="background: #e9ecef; padding: 15px; margin: 15px 0; border-radius: 4px; display: none;">
+              <h4>Password Settings</h4>
+              
+              <!-- 当前密码（如果已设置） -->
+              <div style="margin: 10px 0;">
+                <label>Current Password: <input type="password" id="currentPasswordInput" placeholder="Enter current password" style="width: 200px; padding: 8px; margin: 0 10px; border: 1px solid #ddd; border-radius: 4px;"></label>
+              </div>
+              
+              <!-- 新密码 -->
+              <div style="margin: 10px 0;">
+                <label>New Password: <input type="password" id="newPasswordInput" placeholder="Enter new password" style="width: 200px; padding: 8px; margin: 0 10px; border: 1px solid #ddd; border-radius: 4px;"></label>
+              </div>
+              
+              <!-- 确认密码 -->
+              <div style="margin: 10px 0;">
+                <label>Confirm Password: <input type="password" id="confirmPasswordInput" placeholder="Confirm new password" style="width: 200px; padding: 8px; margin: 0 10px; border: 1px solid #ddd; border-radius: 4px;"></label>
+              </div>
+              
+              <!-- 按钮 -->
+              <div style="margin: 15px 0;">
+                <button id="updatePasswordBtn" style="margin-right: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Update Password</button>
+                <button id="removePasswordBtn" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove Password</button>
+              </div>
+            </div>
+            
+            <!-- 安全提示 -->
+            <div style="background: #d1ecf1; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #17a2b8;">
+              <h4>Security Tips</h4>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Use a strong password with at least 8 characters</li>
+                <li>Include numbers, letters, and special characters</li>
+                <li>Don't share your password with others</li>
+                <li>Remember your password - it cannot be recovered</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -837,14 +924,51 @@
         
         <div class="content-body">
           <div class="section-card">
-            <h3>TEST</h3>
-            <p>This is a simple test to debug the display issue.</p>
-            <p>If you can see this text, the content is loading correctly.</p>
-            <div style="background: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 4px;">
-              <h4>Debug Info:</h4>
-              <p>Current time: <span id="currentTime"></span></p>
-              <p>Page loaded: <span id="pageLoaded"></span></p>
-              <p>Section ID: history</p>
+            <h3>History Records</h3>
+            
+            <!-- 统计信息 -->
+            <div style="background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #007bff;">
+              <h4>Statistics</h4>
+              <p>Total Records: <span id="totalRecords">0</span></p>
+              <p>Today: <span id="todayRecords">0</span> | This Week: <span id="weekRecords">0</span></p>
+              <p>Storage Used: <span id="storageUsed">0 KB</span></p>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div style="margin: 15px 0;">
+              <button id="refreshHistoryBtn" style="margin-right: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Refresh</button>
+              <button id="exportHistoryBtn" style="margin-right: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Export</button>
+              <button id="clearHistoryBtn" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear All</button>
+            </div>
+            
+            <!-- 搜索和过滤 -->
+            <div style="margin: 15px 0;">
+              <input type="text" id="historySearch" placeholder="Search records..." style="width: 200px; padding: 8px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+              <select id="historyFilter" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="all">All Records</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+            
+            <!-- 历史记录列表 -->
+            <div id="historyList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+              <p style="text-align: center; color: #666;">No records found</p>
+            </div>
+            
+            <!-- 设置 -->
+            <div style="background: #e9ecef; padding: 15px; margin: 15px 0; border-radius: 4px;">
+              <h4>Settings</h4>
+              <label style="display: block; margin: 10px 0;">
+                <input type="checkbox" id="autoRecordToggle" style="margin-right: 8px;"> Auto Record Deletions
+              </label>
+              <div style="margin: 10px 0;">
+                <label>Max Records: <input type="number" id="maxRecordsInput" value="1000" min="100" max="10000" style="width: 80px; padding: 4px; margin: 0 10px;"></label>
+              </div>
+              <div style="margin: 10px 0;">
+                <label>Retention Days: <input type="number" id="retentionDaysInput" value="30" min="1" max="365" style="width: 80px; padding: 4px; margin: 0 10px;"></label>
+              </div>
             </div>
           </div>
         </div>

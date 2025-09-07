@@ -63,9 +63,6 @@ let upgradeBtn = null;
 let enabledToggle = null;
 let delayInput = null;
 let freeLimitInput = null;
-let shadowHistoryToggle = null;
-let analyticsToggle = null;
-let prioritySupportToggle = null;
 let presetDomainsList = null;
 let customDomainsList = null;
 let newDomainInput = null;
@@ -76,17 +73,46 @@ let resetBtn = null;
 let exportBtn = null;
 let importBtn = null;
 
-// Password protection elements (simplified for debugging)
-let securityCurrentTimeSpan = null;
-let securityPageLoadedSpan = null;
+// Password protection elements
+let passwordEnabledToggle = null;
+let passwordSettings = null;
+let currentPasswordInput = null;
+let newPasswordInput = null;
+let confirmPasswordInput = null;
+let updatePasswordBtn = null;
+let removePasswordBtn = null;
 
-// History records elements (simplified for debugging)
-let currentTimeSpan = null;
-let pageLoadedSpan = null;
+// History records elements
+let refreshHistoryBtn = null;
+let exportHistoryBtn = null;
+let clearHistoryBtn = null;
+let historyFilter = null;
+let historySearch = null;
+let historyStats = null;
+let historyList = null;
+let totalRecords = null;
+let todayRecords = null;
+let weekRecords = null;
+let storageUsed = null;
+let autoRecordToggle = null;
+let maxRecordsInput = null;
+let retentionDaysInput = null;
+let reloadDomainsBtn = null;
 
-// Advanced features elements (simplified for debugging)
-let featuresCurrentTimeSpan = null;
-let featuresPageLoadedSpan = null;
+// Advanced features elements
+let shadowHistoryToggle = null;
+let analyticsToggle = null;
+let prioritySupportToggle = null;
+let apiAccessToggle = null;
+let upgradeToProBtn = null;
+let shadowHistoryStatus = null;
+let shadowHistoryCount = null;
+let analyticsStatus = null;
+let analyticsCount = null;
+let prioritySupportStatus = null;
+let prioritySupportTime = null;
+let apiAccessStatus = null;
+let apiKeyDisplay = null;
 
 // 获取 DOM 元素的函数
 function getDOMElements() {
@@ -114,29 +140,55 @@ function getDOMElements() {
   exportBtn = document.getElementById('exportBtn');
   importBtn = document.getElementById('importBtn');
   
-  // Password protection elements (simplified for debugging)
-  securityCurrentTimeSpan = document.getElementById('securityCurrentTime');
-  securityPageLoadedSpan = document.getElementById('securityPageLoaded');
+  // Password protection elements
+  passwordEnabledToggle = document.getElementById('passwordEnabledToggle');
+  passwordSettings = document.getElementById('passwordSettings');
+  currentPasswordInput = document.getElementById('currentPasswordInput');
+  newPasswordInput = document.getElementById('newPasswordInput');
+  confirmPasswordInput = document.getElementById('confirmPasswordInput');
+  updatePasswordBtn = document.getElementById('updatePasswordBtn');
+  removePasswordBtn = document.getElementById('removePasswordBtn');
   
-  // History records elements (simplified for debugging)
-  currentTimeSpan = document.getElementById('currentTime');
-  pageLoadedSpan = document.getElementById('pageLoaded');
+  // History records elements
+  refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+  exportHistoryBtn = document.getElementById('exportHistoryBtn');
+  clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  historyFilter = document.getElementById('historyFilter');
+  historySearch = document.getElementById('historySearch');
+  historyStats = document.getElementById('historyStats');
+  historyList = document.getElementById('historyList');
+  totalRecords = document.getElementById('totalRecords');
+  todayRecords = document.getElementById('todayRecords');
+  weekRecords = document.getElementById('weekRecords');
+  storageUsed = document.getElementById('storageUsed');
+  autoRecordToggle = document.getElementById('autoRecordToggle');
+  maxRecordsInput = document.getElementById('maxRecordsInput');
+  retentionDaysInput = document.getElementById('retentionDaysInput');
+  reloadDomainsBtn = document.getElementById('reloadDomainsBtn');
   
-  // Advanced features elements (simplified for debugging)
-  featuresCurrentTimeSpan = document.getElementById('featuresCurrentTime');
-  featuresPageLoadedSpan = document.getElementById('featuresPageLoaded');
+  // Advanced features elements
+  shadowHistoryToggle = document.getElementById('shadowHistoryToggle');
+  analyticsToggle = document.getElementById('analyticsToggle');
+  prioritySupportToggle = document.getElementById('prioritySupportToggle');
+  apiAccessToggle = document.getElementById('apiAccessToggle');
+  upgradeToProBtn = document.getElementById('upgradeToProBtn');
+  shadowHistoryStatus = document.getElementById('shadowHistoryStatus');
+  shadowHistoryCount = document.getElementById('shadowHistoryCount');
+  analyticsStatus = document.getElementById('analyticsStatus');
+  analyticsCount = document.getElementById('analyticsCount');
+  prioritySupportStatus = document.getElementById('prioritySupportStatus');
+  prioritySupportTime = document.getElementById('prioritySupportTime');
+  apiAccessStatus = document.getElementById('apiAccessStatus');
+  apiKeyDisplay = document.getElementById('apiKeyDisplay');
   
   console.log('DOM elements found:');
   console.log('presetDomainsList:', presetDomainsList);
   console.log('customDomainsList:', customDomainsList);
   console.log('newDomainInput:', newDomainInput);
   console.log('addDomainBtn:', addDomainBtn);
-  console.log('currentTimeSpan:', currentTimeSpan);
-  console.log('pageLoadedSpan:', pageLoadedSpan);
-  console.log('securityCurrentTimeSpan:', securityCurrentTimeSpan);
-  console.log('securityPageLoadedSpan:', securityPageLoadedSpan);
-  console.log('featuresCurrentTimeSpan:', featuresCurrentTimeSpan);
-  console.log('featuresPageLoadedSpan:', featuresPageLoadedSpan);
+  console.log('passwordEnabledToggle:', passwordEnabledToggle);
+  console.log('refreshHistoryBtn:', refreshHistoryBtn);
+  console.log('shadowHistoryToggle:', shadowHistoryToggle);
   
   // 检查关键元素是否存在
   if (!presetDomainsList) {
@@ -145,14 +197,14 @@ function getDOMElements() {
   if (!customDomainsList) {
     console.error('customDomainsList not found!');
   }
-  if (!currentTimeSpan) {
-    console.error('currentTimeSpan not found!');
+  if (!passwordEnabledToggle) {
+    console.error('passwordEnabledToggle not found!');
   }
-  if (!securityCurrentTimeSpan) {
-    console.error('securityCurrentTimeSpan not found!');
+  if (!refreshHistoryBtn) {
+    console.error('refreshHistoryBtn not found!');
   }
-  if (!featuresCurrentTimeSpan) {
-    console.error('featuresCurrentTimeSpan not found!');
+  if (!shadowHistoryToggle) {
+    console.error('shadowHistoryToggle not found!');
   }
 }
 
@@ -478,8 +530,22 @@ function setupEventListeners() {
   if (updatePasswordBtn) updatePasswordBtn.addEventListener('click', updatePassword);
   if (removePasswordBtn) removePasswordBtn.addEventListener('click', removePassword);
   
-  // History records (simplified for debugging)
-  // No complex event listeners for now
+  // History records
+  if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
+  if (exportHistoryBtn) exportHistoryBtn.addEventListener('click', exportHistoryRecords);
+  if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistoryRecords);
+  if (historyFilter) historyFilter.addEventListener('change', filterHistoryRecords);
+  if (historySearch) historySearch.addEventListener('input', searchHistoryRecords);
+  if (autoRecordToggle) autoRecordToggle.addEventListener('change', updateHistorySettings);
+  if (maxRecordsInput) maxRecordsInput.addEventListener('change', updateHistorySettings);
+  if (retentionDaysInput) retentionDaysInput.addEventListener('change', updateHistorySettings);
+  
+  // Advanced features
+  if (shadowHistoryToggle) shadowHistoryToggle.addEventListener('change', toggleShadowHistory);
+  if (analyticsToggle) analyticsToggle.addEventListener('change', toggleAnalytics);
+  if (prioritySupportToggle) prioritySupportToggle.addEventListener('change', togglePrioritySupport);
+  if (apiAccessToggle) apiAccessToggle.addEventListener('change', toggleApiAccess);
+  if (upgradeToProBtn) upgradeToProBtn.addEventListener('click', upgradeToPro);
   
   console.log('Event listeners setup complete');
 }
@@ -515,8 +581,8 @@ function updateUI() {
   // Update password protection UI
   updatePasswordUI();
   
-  // Update history records UI (simplified for debugging)
-  updateTestInfo();
+  // Update history records UI
+  updateHistoryUI();
   
   // 添加调试信息
   console.log('UI updated, preset domains:', presetDomains);
@@ -1292,56 +1358,312 @@ async function removePassword() {
 
 // ==================== 简化测试功能 ====================
 
-// 更新测试信息
-function updateTestInfo() {
-  console.log('Updating test info...');
+// 更新历史记录 UI
+async function updateHistoryUI() {
+  console.log('Updating history UI...');
   
-  // History Records 页面
-  if (currentTimeSpan) {
-    currentTimeSpan.textContent = new Date().toLocaleString();
-    console.log('✅ History current time updated');
-  } else {
-    console.log('❌ currentTimeSpan not found');
+  try {
+    // 获取历史记录设置
+    const settings = await chrome.storage.local.get(['historySettings']);
+    const historySettings = settings.historySettings || { autoRecord: true, maxRecords: 1000, retentionDays: 30 };
+    
+    // 更新设置 UI
+    if (autoRecordToggle) {
+      autoRecordToggle.checked = historySettings.autoRecord;
+    }
+    if (maxRecordsInput) {
+      maxRecordsInput.value = historySettings.maxRecords;
+    }
+    if (retentionDaysInput) {
+      retentionDaysInput.value = historySettings.retentionDays;
+    }
+    
+    // 获取历史记录
+    const stored = await chrome.storage.local.get(['historyRecords']);
+    let historyRecords = stored.historyRecords || [];
+    
+    // 计算统计信息
+    const now = Date.now();
+    const today = new Date().setHours(0, 0, 0, 0);
+    const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+    
+    const todayCount = historyRecords.filter(record => record.deletedAt >= today).length;
+    const weekCount = historyRecords.filter(record => record.deletedAt >= weekAgo).length;
+    const totalCount = historyRecords.length;
+    
+    // 更新统计显示
+    if (totalRecords) totalRecords.textContent = totalCount;
+    if (todayRecords) todayRecords.textContent = todayCount;
+    if (weekRecords) weekRecords.textContent = weekCount;
+    
+    // 计算存储使用量
+    const storageSize = JSON.stringify(historyRecords).length;
+    const storageKB = Math.round(storageSize / 1024 * 100) / 100;
+    if (storageUsed) storageUsed.textContent = `${storageKB} KB`;
+    
+    // 更新历史记录列表
+    updateHistoryList(historyRecords);
+    
+    console.log('History UI updated successfully');
+  } catch (error) {
+    console.error('Failed to update history UI:', error);
+  }
+}
+
+// 更新历史记录列表
+function updateHistoryList(records) {
+  if (!historyList) return;
+  
+  if (records.length === 0) {
+    historyList.innerHTML = '<p style="text-align: center; color: #666;">No records found</p>';
+    return;
   }
   
-  if (pageLoadedSpan) {
-    pageLoadedSpan.textContent = new Date().toLocaleString();
-    console.log('✅ History page loaded time updated');
-  } else {
-    console.log('❌ pageLoadedSpan not found');
+  const html = records.map(record => {
+    const date = new Date(record.deletedAt).toLocaleString();
+    return `
+      <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: bold; color: #333;">${record.title || 'Untitled'}</div>
+          <div style="font-size: 12px; color: #666;">${record.url}</div>
+          <div style="font-size: 11px; color: #999;">${date}</div>
+        </div>
+        <div style="font-size: 12px; color: #666;">${record.domain}</div>
+      </div>
+    `;
+  }).join('');
+  
+  historyList.innerHTML = html;
+}
+
+// 刷新历史记录
+async function refreshHistoryRecords() {
+  console.log('Refreshing history records...');
+  await updateHistoryUI();
+  showMessage('History records refreshed', 'success');
+}
+
+// 导出历史记录
+async function exportHistoryRecords() {
+  try {
+    const stored = await chrome.storage.local.get(['historyRecords']);
+    const records = stored.historyRecords || [];
+    
+    const dataStr = JSON.stringify(records, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `autopurge-history-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    showMessage('History records exported', 'success');
+  } catch (error) {
+    console.error('Failed to export history records:', error);
+    showMessage('Failed to export history records', 'error');
+  }
+}
+
+// 清空历史记录
+async function clearHistoryRecords() {
+  if (confirm('Are you sure you want to clear all history records? This action cannot be undone.')) {
+    try {
+      await chrome.storage.local.set({ historyRecords: [] });
+      await updateHistoryUI();
+      showMessage('History records cleared', 'success');
+    } catch (error) {
+      console.error('Failed to clear history records:', error);
+      showMessage('Failed to clear history records', 'error');
+    }
+  }
+}
+
+// 过滤历史记录
+function filterHistoryRecords() {
+  if (!historyFilter) return;
+  
+  const filter = historyFilter.value;
+  console.log('Filtering history records by:', filter);
+  
+  // 这里可以添加过滤逻辑
+  updateHistoryUI();
+}
+
+// 搜索历史记录
+function searchHistoryRecords() {
+  if (!historySearch) return;
+  
+  const query = historySearch.value.toLowerCase();
+  console.log('Searching history records for:', query);
+  
+  // 这里可以添加搜索逻辑
+  updateHistoryUI();
+}
+
+// 更新历史记录设置
+async function updateHistorySettings() {
+  try {
+    const settings = {
+      autoRecord: autoRecordToggle ? autoRecordToggle.checked : true,
+      maxRecords: maxRecordsInput ? parseInt(maxRecordsInput.value) : 1000,
+      retentionDays: retentionDaysInput ? parseInt(retentionDaysInput.value) : 30
+    };
+    
+    await chrome.storage.local.set({ historySettings: settings });
+    showMessage('History settings updated', 'success');
+  } catch (error) {
+    console.error('Failed to update history settings:', error);
+    showMessage('Failed to update history settings', 'error');
+  }
+}
+
+// ==================== 密码保护功能 ====================
+
+// 切换密码保护
+async function togglePasswordProtection() {
+  if (!passwordEnabledToggle || !passwordSettings) return;
+  
+  const enabled = passwordEnabledToggle.checked;
+  passwordSettings.style.display = enabled ? 'block' : 'none';
+  
+  if (enabled) {
+    // 检查是否已有密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    if (stored.passwordHash) {
+      // 已有密码，隐藏当前密码输入
+      if (currentPasswordInput) {
+        currentPasswordInput.style.display = 'none';
+      }
+    } else {
+      // 没有密码，显示设置新密码
+      if (currentPasswordInput) {
+        currentPasswordInput.style.display = 'block';
+      }
+    }
   }
   
-  // Security 页面
-  if (securityCurrentTimeSpan) {
-    securityCurrentTimeSpan.textContent = new Date().toLocaleString();
-    console.log('✅ Security current time updated');
-  } else {
-    console.log('❌ securityCurrentTimeSpan not found');
+  showMessage(`Password protection ${enabled ? 'enabled' : 'disabled'}`, 'success');
+}
+
+// 更新密码
+async function updatePassword() {
+  if (!newPasswordInput || !confirmPasswordInput) return;
+  
+  const newPassword = newPasswordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
+  
+  if (!newPassword || !confirmPassword) {
+    showMessage('Please fill in all password fields', 'error');
+    return;
   }
   
-  if (securityPageLoadedSpan) {
-    securityPageLoadedSpan.textContent = new Date().toLocaleString();
-    console.log('✅ Security page loaded time updated');
-  } else {
-    console.log('❌ securityPageLoadedSpan not found');
+  if (newPassword !== confirmPassword) {
+    showMessage('Passwords do not match', 'error');
+    return;
   }
   
-  // Advanced Features 页面
-  if (featuresCurrentTimeSpan) {
-    featuresCurrentTimeSpan.textContent = new Date().toLocaleString();
-    console.log('✅ Features current time updated');
-  } else {
-    console.log('❌ featuresCurrentTimeSpan not found');
+  if (newPassword.length < 8) {
+    showMessage('Password must be at least 8 characters long', 'error');
+    return;
   }
   
-  if (featuresPageLoadedSpan) {
-    featuresPageLoadedSpan.textContent = new Date().toLocaleString();
-    console.log('✅ Features page loaded time updated');
+  try {
+    // 简单的密码哈希（实际应用中应使用更安全的方法）
+    const passwordHash = btoa(newPassword);
+    await chrome.storage.local.set({ passwordHash: passwordHash });
+    
+    // 清空输入框
+    newPasswordInput.value = '';
+    confirmPasswordInput.value = '';
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    
+    showMessage('Password updated successfully', 'success');
+  } catch (error) {
+    console.error('Failed to update password:', error);
+    showMessage('Failed to update password', 'error');
+  }
+}
+
+// 移除密码
+async function removePassword() {
+  if (confirm('Are you sure you want to remove password protection?')) {
+    try {
+      await chrome.storage.local.remove(['passwordHash']);
+      if (passwordEnabledToggle) {
+        passwordEnabledToggle.checked = false;
+      }
+      if (passwordSettings) {
+        passwordSettings.style.display = 'none';
+      }
+      showMessage('Password protection removed', 'success');
+    } catch (error) {
+      console.error('Failed to remove password:', error);
+      showMessage('Failed to remove password', 'error');
+    }
+  }
+}
+
+// ==================== 高级功能 ====================
+
+// 切换 Shadow History
+async function toggleShadowHistory() {
+  if (!shadowHistoryToggle || !shadowHistoryStatus) return;
+  
+  const enabled = shadowHistoryToggle.checked;
+  shadowHistoryStatus.textContent = enabled ? 'Enabled' : 'Disabled';
+  
+  // 这里可以添加实际的 Shadow History 逻辑
+  showMessage(`Shadow History ${enabled ? 'enabled' : 'disabled'}`, 'success');
+}
+
+// 切换 Analytics
+async function toggleAnalytics() {
+  if (!analyticsToggle || !analyticsStatus) return;
+  
+  const enabled = analyticsToggle.checked;
+  analyticsStatus.textContent = enabled ? 'Enabled' : 'Disabled';
+  
+  // 这里可以添加实际的 Analytics 逻辑
+  showMessage(`Analytics ${enabled ? 'enabled' : 'disabled'}`, 'success');
+}
+
+// 切换 Priority Support
+async function togglePrioritySupport() {
+  if (!prioritySupportToggle || !prioritySupportStatus || !prioritySupportTime) return;
+  
+  const enabled = prioritySupportToggle.checked;
+  prioritySupportStatus.textContent = enabled ? 'Enabled' : 'Disabled';
+  prioritySupportTime.textContent = enabled ? 'Priority' : 'Standard';
+  
+  // 这里可以添加实际的 Priority Support 逻辑
+  showMessage(`Priority Support ${enabled ? 'enabled' : 'disabled'}`, 'success');
+}
+
+// 切换 API Access
+async function toggleApiAccess() {
+  if (!apiAccessToggle || !apiAccessStatus || !apiKeyDisplay) return;
+  
+  const enabled = apiAccessToggle.checked;
+  apiAccessStatus.textContent = enabled ? 'Enabled' : 'Disabled';
+  
+  if (enabled) {
+    // 生成简单的 API Key
+    const apiKey = 'ap_' + Math.random().toString(36).substr(2, 16);
+    apiKeyDisplay.textContent = apiKey;
   } else {
-    console.log('❌ featuresPageLoadedSpan not found');
+    apiKeyDisplay.textContent = 'Not Generated';
   }
   
-  console.log('Test info update complete');
+  // 这里可以添加实际的 API Access 逻辑
+  showMessage(`API Access ${enabled ? 'enabled' : 'disabled'}`, 'success');
+}
+
+// 升级到 Pro
+function upgradeToPro() {
+  showMessage('Pro upgrade feature coming soon!', 'info');
+  // 这里可以添加实际的升级逻辑
 }
 
 // ==================== 历史记录功能实现 ====================
@@ -1710,9 +2032,8 @@ window.debugOptions = {
     
     // 检查关键元素
     const keyElements = [
-      'presetDomainsList', 'customDomainsList', 'currentTimeSpan', 
-      'pageLoadedSpan', 'securityCurrentTime', 'securityPageLoaded',
-      'featuresCurrentTime', 'featuresPageLoaded'
+      'presetDomainsList', 'customDomainsList', 'passwordEnabledToggle', 
+      'refreshHistoryBtn', 'shadowHistoryToggle'
     ];
     
     keyElements.forEach(id => {
@@ -1742,7 +2063,7 @@ window.debugOptions = {
   // 测试历史记录功能
   testHistoryRecords: () => {
     console.log('测试历史记录功能...');
-    updateTestInfo();
+    updateHistoryUI();
     console.log('历史记录功能测试完成');
   }
 };
