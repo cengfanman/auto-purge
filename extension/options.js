@@ -553,6 +553,14 @@ function setupHistoryButtonDelegation() {
   
   // 使用事件委托处理历史记录按钮点击
   document.addEventListener('click', function(event) {
+    // Copy按钮
+    if (event.target.classList.contains('copy-history-btn')) {
+      event.preventDefault();
+      const recordId = event.target.getAttribute('data-record-id');
+      console.log('Copy button clicked for record:', recordId);
+      copyHistoryRecord(recordId);
+    }
+    
     // View按钮
     if (event.target.classList.contains('view-history-btn')) {
       event.preventDefault();
@@ -2276,6 +2284,9 @@ function updateHistoryList() {
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="copy-history-btn" data-record-id="${record.id}" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            Copy
+          </button>
           <button class="view-history-btn" data-record-id="${record.id}" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             View
           </button>
@@ -2449,6 +2460,9 @@ function updateHistoryListWithFilter(filteredRecords) {
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="copy-history-btn" data-record-id="${record.id}" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            Copy
+          </button>
           <button class="view-history-btn" data-record-id="${record.id}" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             View
           </button>
@@ -2479,6 +2493,44 @@ async function updateHistorySettings() {
   } catch (error) {
     console.error('Failed to update history settings:', error);
     showError('Failed to update history settings');
+  }
+}
+
+// 复制历史记录URL
+async function copyHistoryRecord(recordId) {
+  const record = historyRecords.find(r => r.id === recordId);
+  if (!record) {
+    console.error('Record not found:', recordId);
+    return;
+  }
+  
+  console.log('Copying record URL:', record.url);
+  
+  try {
+    // 使用 Clipboard API 复制URL
+    await navigator.clipboard.writeText(record.url);
+    console.log('URL copied to clipboard:', record.url);
+    
+    // 显示成功消息
+    showMessage('URL copied to clipboard', 'success');
+  } catch (error) {
+    console.error('Failed to copy URL:', error);
+    
+    // 降级方案：使用传统的复制方法
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = record.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      console.log('URL copied using fallback method:', record.url);
+      showMessage('URL copied to clipboard', 'success');
+    } catch (fallbackError) {
+      console.error('Fallback copy method also failed:', fallbackError);
+      showMessage('Failed to copy URL', 'error');
+    }
   }
 }
 
