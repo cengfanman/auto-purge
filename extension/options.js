@@ -50,7 +50,9 @@ function setupNavigation() {
           if (!historyList) {
             console.log('History list element not found, re-getting DOM elements...');
             getDOMElements();
+            console.log('After re-getting DOM elements, historyList:', historyList);
           }
+          console.log('About to call updateHistoryUI, historyList:', historyList);
           await updateHistoryUI();
           console.log('updateHistoryUI completed');
         }, 200);
@@ -211,6 +213,7 @@ function getDOMElements() {
   historySearch = document.getElementById('historySearch');
   historyStats = document.getElementById('historyStats');
   historyList = document.getElementById('historyList');
+  console.log('historyList element found:', historyList);
   totalRecords = document.getElementById('totalRecords');
   todayRecords = document.getElementById('todayRecords');
   weekRecords = document.getElementById('weekRecords');
@@ -1626,8 +1629,13 @@ async function updateHistoryUI() {
   console.log('historyList element:', historyList);
   
   if (!historyList) {
-    console.error('historyList element not found!');
-    return;
+    console.error('historyList element not found! Trying to get it again...');
+    historyList = document.getElementById('historyList');
+    console.log('After re-getting, historyList:', historyList);
+    if (!historyList) {
+      console.error('Still no historyList element found!');
+      return;
+    }
   }
   
   try {
@@ -2230,32 +2238,6 @@ function upgradeToPro() {
 
 // ==================== 历史记录功能实现 ====================
 
-// 更新历史记录 UI
-function updateHistoryUI() {
-  if (!historyList || !totalRecords || !todayRecords || !weekRecords || !storageUsed) return;
-  
-  // 更新统计信息
-  const now = Date.now();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
-  
-  const todayCount = historyRecords.filter(record => record.deletedAt >= today.getTime()).length;
-  const weekCount = historyRecords.filter(record => record.deletedAt >= weekAgo).length;
-  const totalCount = historyRecords.length;
-  
-  // 计算存储使用量
-  const storageSize = JSON.stringify(historyRecords).length;
-  const storageMB = (storageSize / (1024 * 1024)).toFixed(2);
-  
-  totalRecords.textContent = totalCount;
-  todayRecords.textContent = todayCount;
-  weekRecords.textContent = weekCount;
-  storageUsed.textContent = storageMB + ' MB';
-  
-  // 更新历史记录列表
-  updateHistoryList();
-}
 
 // 更新历史记录列表
 function updateHistoryList() {
