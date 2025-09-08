@@ -91,6 +91,13 @@ let verifyPasswordInput = null;
 let verifyCancelBtn = null;
 let verifyConfirmBtn = null;
 
+// Create password modal elements
+let createPasswordModal = null;
+let createPasswordInput = null;
+let createConfirmPasswordInput = null;
+let createCancelBtn = null;
+let createConfirmBtn = null;
+
 // Delete password modal elements
 let deletePasswordModal = null;
 let deleteHistoryRecords = null;
@@ -173,6 +180,13 @@ function getDOMElements() {
   verifyPasswordInput = document.getElementById('verifyPasswordInput');
   verifyCancelBtn = document.getElementById('verifyCancelBtn');
   verifyConfirmBtn = document.getElementById('verifyConfirmBtn');
+  
+  // Create password modal elements
+  createPasswordModal = document.getElementById('createPasswordModal');
+  createPasswordInput = document.getElementById('createPasswordInput');
+  createConfirmPasswordInput = document.getElementById('createConfirmPasswordInput');
+  createCancelBtn = document.getElementById('createCancelBtn');
+  createConfirmBtn = document.getElementById('createConfirmBtn');
   
   // Delete password modal elements
   deletePasswordModal = document.getElementById('deletePasswordModal');
@@ -578,6 +592,33 @@ function setupEventListeners() {
     passwordVerifyModal.addEventListener('click', (e) => {
       if (e.target === passwordVerifyModal) {
         hidePasswordVerifyModal();
+      }
+    });
+  }
+  
+  // Create password modal
+  if (createCancelBtn) createCancelBtn.addEventListener('click', hideCreatePasswordModal);
+  if (createConfirmBtn) createConfirmBtn.addEventListener('click', confirmCreatePassword);
+  if (createPasswordInput) {
+    createPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmCreatePassword();
+      }
+    });
+  }
+  if (createConfirmPasswordInput) {
+    createConfirmPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmCreatePassword();
+      }
+    });
+  }
+  
+  // 点击模态框背景关闭
+  if (createPasswordModal) {
+    createPasswordModal.addEventListener('click', (e) => {
+      if (e.target === createPasswordModal) {
+        hideCreatePasswordModal();
       }
     });
   }
@@ -1301,7 +1342,12 @@ async function updatePasswordUI() {
         passwordStatusText.textContent = '⚠️ Password is set but protection is disabled';
         passwordStatusText.style.color = '#856404';
       } else {
-        passwordStatus.style.display = 'none';
+        // 无密码状态（无论保护是否启用，都显示无密码状态）
+        passwordStatus.style.display = 'block';
+        passwordStatus.style.background = '#e2e3e5';
+        passwordStatus.style.border = '1px solid #d6d8db';
+        passwordStatusText.textContent = 'ℹ️ No password set - password protection is disabled';
+        passwordStatusText.style.color = '#6c757d';
       }
     }
     
@@ -1645,8 +1691,17 @@ async function togglePasswordProtection() {
   
   try {
     if (enabled) {
-      // 启用密码保护 - 直接启用
-      await enablePasswordProtection();
+      // 启用密码保护 - 检查是否有密码
+      const stored = await chrome.storage.local.get(['passwordHash']);
+      
+      if (stored.passwordHash) {
+        // 有密码，直接启用
+        await enablePasswordProtection();
+      } else {
+        // 没有密码，显示创建密码弹窗
+        showCreatePasswordModal();
+        return;
+      }
     } else {
       // 禁用密码保护 - 检查是否已有密码
       const stored = await chrome.storage.local.get(['passwordHash']);
@@ -1852,6 +1907,89 @@ async function updatePassword() {
   } catch (error) {
     console.error('Failed to update password:', error);
     showMessage('Failed to update password', 'error');
+  }
+}
+
+// 显示创建密码弹窗
+function showCreatePasswordModal() {
+  if (createPasswordModal) {
+    createPasswordModal.style.display = 'flex';
+    if (createPasswordInput) {
+      createPasswordInput.focus();
+      createPasswordInput.value = '';
+    }
+    if (createConfirmPasswordInput) {
+      createConfirmPasswordInput.value = '';
+    }
+  }
+}
+
+// 隐藏创建密码弹窗
+function hideCreatePasswordModal() {
+  if (createPasswordModal) {
+    createPasswordModal.style.display = 'none';
+    if (createPasswordInput) {
+      createPasswordInput.value = '';
+    }
+    if (createConfirmPasswordInput) {
+      createConfirmPasswordInput.value = '';
+    }
+  }
+  
+  // 恢复复选框状态（用户取消了创建密码）
+  if (passwordEnabledToggle) {
+    passwordEnabledToggle.checked = false;
+  }
+}
+
+// 确认创建密码
+async function confirmCreatePassword() {
+  if (!createPasswordInput || !createConfirmPasswordInput) {
+    showMessage('Password inputs not found', 'error');
+    return;
+  }
+  
+  const password = createPasswordInput.value;
+  const confirmPassword = createConfirmPasswordInput.value;
+  
+  if (!password || !confirmPassword) {
+    showMessage('Please fill in all password fields', 'error');
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    showMessage('Passwords do not match', 'error');
+    return;
+  }
+  
+  if (password.length < 8) {
+    showMessage('Password must be at least 8 characters long', 'error');
+    return;
+  }
+  
+  try {
+    // 创建密码
+    const passwordHash = btoa(password);
+    await chrome.storage.local.set({ 
+      passwordHash: passwordHash,
+      passwordProtectionEnabled: true
+    });
+    
+    // 清空输入框
+    createPasswordInput.value = '';
+    createConfirmPasswordInput.value = '';
+    
+    // 隐藏弹窗
+    hideCreatePasswordModal();
+    
+    // 启用密码保护
+    await enablePasswordProtection();
+    
+    showMessage('Password created and protection enabled successfully', 'success');
+    
+  } catch (error) {
+    console.error('Failed to create password:', error);
+    showMessage('Failed to create password', 'error');
   }
 }
 
