@@ -76,13 +76,27 @@ let importBtn = null;
 // Password protection elements
 let passwordEnabledToggle = null;
 let passwordSettings = null;
+let passwordStatus = null;
+let passwordStatusText = null;
 let currentPasswordDiv = null;
 let currentPasswordInput = null;
 let newPasswordInput = null;
 let confirmPasswordInput = null;
 let updatePasswordBtn = null;
-let disablePasswordBtn = null;
-let removePasswordBtn = null;
+let deletePasswordBtn = null;
+
+// Password verification modal elements
+let passwordVerifyModal = null;
+let verifyPasswordInput = null;
+let verifyCancelBtn = null;
+let verifyConfirmBtn = null;
+
+// Delete password modal elements
+let deletePasswordModal = null;
+let deleteHistoryRecords = null;
+let deleteCancelBtn = null;
+let deleteConfirmBtn = null;
+
 
 // History records elements
 let refreshHistoryBtn = null;
@@ -145,13 +159,27 @@ function getDOMElements() {
   // Password protection elements
   passwordEnabledToggle = document.getElementById('passwordEnabledToggle');
   passwordSettings = document.getElementById('passwordSettings');
+  passwordStatus = document.getElementById('passwordStatus');
+  passwordStatusText = document.getElementById('passwordStatusText');
   currentPasswordDiv = document.getElementById('currentPasswordDiv');
   currentPasswordInput = document.getElementById('currentPasswordInput');
   newPasswordInput = document.getElementById('newPasswordInput');
   confirmPasswordInput = document.getElementById('confirmPasswordInput');
   updatePasswordBtn = document.getElementById('updatePasswordBtn');
-  disablePasswordBtn = document.getElementById('disablePasswordBtn');
-  removePasswordBtn = document.getElementById('removePasswordBtn');
+  deletePasswordBtn = document.getElementById('removePasswordBtn');
+  
+  // Password verification modal elements
+  passwordVerifyModal = document.getElementById('passwordVerifyModal');
+  verifyPasswordInput = document.getElementById('verifyPasswordInput');
+  verifyCancelBtn = document.getElementById('verifyCancelBtn');
+  verifyConfirmBtn = document.getElementById('verifyConfirmBtn');
+  
+  // Delete password modal elements
+  deletePasswordModal = document.getElementById('deletePasswordModal');
+  deleteHistoryRecords = document.getElementById('deleteHistoryRecords');
+  deleteCancelBtn = document.getElementById('deleteCancelBtn');
+  deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+  
   
   // History records elements
   refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
@@ -532,8 +560,40 @@ function setupEventListeners() {
   // Password protection
   if (passwordEnabledToggle) passwordEnabledToggle.addEventListener('change', togglePasswordProtection);
   if (updatePasswordBtn) updatePasswordBtn.addEventListener('click', updatePassword);
-  if (disablePasswordBtn) disablePasswordBtn.addEventListener('click', disablePasswordProtection);
-  if (removePasswordBtn) removePasswordBtn.addEventListener('click', removePassword);
+  if (deletePasswordBtn) deletePasswordBtn.addEventListener('click', removePassword);
+  
+  // Password verification modal
+  if (verifyCancelBtn) verifyCancelBtn.addEventListener('click', hidePasswordVerifyModal);
+  if (verifyConfirmBtn) verifyConfirmBtn.addEventListener('click', confirmPasswordVerification);
+  if (verifyPasswordInput) {
+    verifyPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmPasswordVerification();
+      }
+    });
+  }
+  
+  // 点击模态框背景关闭
+  if (passwordVerifyModal) {
+    passwordVerifyModal.addEventListener('click', (e) => {
+      if (e.target === passwordVerifyModal) {
+        hidePasswordVerifyModal();
+      }
+    });
+  }
+  
+  // Delete password modal
+  if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', hideDeletePasswordModal);
+  if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', confirmDeletePassword);
+  
+  // 点击模态框背景关闭
+  if (deletePasswordModal) {
+    deletePasswordModal.addEventListener('click', (e) => {
+      if (e.target === deletePasswordModal) {
+        hideDeletePasswordModal();
+      }
+    });
+  }
   
   // History records
   if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
@@ -1215,18 +1275,58 @@ async function verifyPassword(password, hash, salt) {
 
 // 更新密码保护 UI
 async function updatePasswordUI() {
-  if (!passwordEnabledToggle || !passwordSettings) return;
+  if (!passwordEnabledToggle) return;
   
   try {
-    // 检查是否已有密码
-    const stored = await chrome.storage.local.get(['passwordHash']);
+    // 检查是否已有密码和密码保护状态
+    const stored = await chrome.storage.local.get(['passwordHash', 'passwordProtectionEnabled']);
     const hasPassword = !!stored.passwordHash;
+    const isProtectionEnabled = stored.passwordProtectionEnabled === true;
     
-    passwordEnabledToggle.checked = hasPassword;
-    passwordSettings.style.display = hasPassword ? 'block' : 'none';
+    // 更新复选框状态
+    passwordEnabledToggle.checked = isProtectionEnabled;
+    
+    // 更新密码状态显示
+    if (passwordStatus && passwordStatusText) {
+      if (hasPassword && isProtectionEnabled) {
+        passwordStatus.style.display = 'block';
+        passwordStatus.style.background = '#d4edda';
+        passwordStatus.style.border = '1px solid #c3e6cb';
+        passwordStatusText.textContent = '✅ Password is set and protection is enabled';
+        passwordStatusText.style.color = '#155724';
+      } else if (hasPassword && !isProtectionEnabled) {
+        passwordStatus.style.display = 'block';
+        passwordStatus.style.background = '#fff3cd';
+        passwordStatus.style.border = '1px solid #ffeaa7';
+        passwordStatusText.textContent = '⚠️ Password is set but protection is disabled';
+        passwordStatusText.style.color = '#856404';
+      } else {
+        passwordStatus.style.display = 'none';
+      }
+    }
+    
+    // 密码设置区域现在直接显示/隐藏
+    if (passwordSettings) {
+      passwordSettings.style.display = isProtectionEnabled ? 'block' : 'none';
+    }
     
     if (currentPasswordDiv) {
-      currentPasswordDiv.style.display = hasPassword ? 'block' : 'none';
+      currentPasswordDiv.style.display = (isProtectionEnabled && hasPassword) ? 'block' : 'none';
+    }
+    
+    // 更新删除密码按钮状态
+    if (deletePasswordBtn) {
+      if (hasPassword) {
+        deletePasswordBtn.disabled = false;
+        deletePasswordBtn.style.opacity = '1';
+        deletePasswordBtn.style.cursor = 'pointer';
+        deletePasswordBtn.title = 'Delete password and all history records';
+      } else {
+        deletePasswordBtn.disabled = true;
+        deletePasswordBtn.style.opacity = '0.5';
+        deletePasswordBtn.style.cursor = 'not-allowed';
+        deletePasswordBtn.title = 'No password to delete';
+      }
     }
     
     // 清空密码输入框
@@ -1234,7 +1334,7 @@ async function updatePasswordUI() {
     if (newPasswordInput) newPasswordInput.value = '';
     if (confirmPasswordInput) confirmPasswordInput.value = '';
     
-    console.log('Password protection UI updated, has password:', hasPassword);
+    console.log('Password protection UI updated, has password:', hasPassword, 'protection enabled:', isProtectionEnabled);
   } catch (error) {
     console.error('Failed to update password UI:', error);
   }
@@ -1262,15 +1362,15 @@ async function togglePasswordProtection() {
       const salt = generateSalt();
       const hash = await hashPassword(password, salt);
       
-      passwordConfig = {
-        enabled: true,
-        hash: hash,
-        salt: salt
-      };
+      // 保存到 chrome.storage.local
+      await chrome.storage.local.set({
+        passwordHash: hash,
+        passwordSalt: salt,
+        passwordProtectionEnabled: true
+      });
       
-      localStorage.setItem('autopurge_password', JSON.stringify(passwordConfig));
       updatePasswordUI();
-      showSuccess('Password protection enabled');
+      showMessage('Password protection enabled', 'success');
       
     } catch (error) {
       console.error('Failed to enable password protection:', error);
@@ -1278,11 +1378,8 @@ async function togglePasswordProtection() {
       passwordEnabledToggle.checked = false;
     }
   } else {
-    // 禁用密码保护
-    passwordConfig = { enabled: false, hash: null, salt: null };
-    localStorage.removeItem('autopurge_password');
-    updatePasswordUI();
-    showSuccess('Password protection disabled');
+    // 禁用密码保护 - 需要密码验证
+    await handleDisablePasswordProtection();
   }
 }
 
@@ -1546,9 +1643,40 @@ async function togglePasswordProtection() {
   
   const enabled = passwordEnabledToggle.checked;
   
-  if (enabled) {
-    // 启用密码保护
+  try {
+    if (enabled) {
+      // 启用密码保护 - 直接启用
+      await enablePasswordProtection();
+    } else {
+      // 禁用密码保护 - 检查是否已有密码
+      const stored = await chrome.storage.local.get(['passwordHash']);
+      
+      if (stored.passwordHash) {
+        // 已有密码，需要验证当前密码才能禁用
+        showPasswordVerifyModal();
+        return; // 等待用户验证密码
+      } else {
+        // 没有密码，直接禁用
+        await disablePasswordProtection();
+      }
+    }
+  } catch (error) {
+    console.error('Failed to toggle password protection:', error);
+    showMessage('Failed to update password protection', 'error');
+    
+    // 恢复复选框状态
+    passwordEnabledToggle.checked = !enabled;
+  }
+}
+
+// 启用密码保护
+async function enablePasswordProtection() {
+  try {
+    // 显示密码设置区域
     passwordSettings.style.display = 'block';
+    
+    // 保存密码保护状态
+    await chrome.storage.local.set({ passwordProtectionEnabled: true });
     
     // 检查是否已有密码
     const stored = await chrome.storage.local.get(['passwordHash']);
@@ -1565,10 +1693,92 @@ async function togglePasswordProtection() {
     }
     
     showMessage('Password protection enabled', 'success');
-  } else {
-    // 禁用密码保护（但保留密码数据）
+  } catch (error) {
+    console.error('Failed to enable password protection:', error);
+    showMessage('Failed to enable password protection', 'error');
+    throw error;
+  }
+}
+
+// 禁用密码保护
+async function disablePasswordProtection() {
+  try {
+    // 隐藏密码设置区域
     passwordSettings.style.display = 'none';
-    showMessage('Password protection disabled (password is kept)', 'info');
+    
+    // 保存密码保护状态
+    await chrome.storage.local.set({ passwordProtectionEnabled: false });
+    
+    showMessage('Password protection disabled', 'success');
+  } catch (error) {
+    console.error('Failed to disable password protection:', error);
+    showMessage('Failed to disable password protection', 'error');
+    throw error;
+  }
+}
+
+// 显示密码验证弹窗
+function showPasswordVerifyModal() {
+  if (passwordVerifyModal) {
+    passwordVerifyModal.style.display = 'flex';
+    if (verifyPasswordInput) {
+      verifyPasswordInput.focus();
+      verifyPasswordInput.value = '';
+    }
+  }
+}
+
+// 隐藏密码验证弹窗
+function hidePasswordVerifyModal() {
+  if (passwordVerifyModal) {
+    passwordVerifyModal.style.display = 'none';
+    if (verifyPasswordInput) {
+      verifyPasswordInput.value = '';
+    }
+  }
+  
+  // 恢复复选框状态（用户取消了验证，应该保持原来的选中状态）
+  if (passwordEnabledToggle) {
+    passwordEnabledToggle.checked = true;
+  }
+}
+
+// 确认密码验证
+async function confirmPasswordVerification() {
+  if (!verifyPasswordInput) {
+    showMessage('Password input not found', 'error');
+    return;
+  }
+  
+  const currentPassword = verifyPasswordInput.value;
+  if (!currentPassword) {
+    showMessage('Please enter current password', 'error');
+    return;
+  }
+  
+  try {
+    // 验证当前密码
+    const stored = await chrome.storage.local.get(['passwordHash']);
+    if (!stored.passwordHash) {
+      showMessage('No password found to verify', 'error');
+      return;
+    }
+    
+    const currentHash = btoa(currentPassword);
+    if (currentHash !== stored.passwordHash) {
+      showMessage('Current password is incorrect', 'error');
+      return;
+    }
+    
+    // 密码验证成功，禁用密码保护
+    await disablePasswordProtection();
+    
+    // 隐藏弹窗
+    hidePasswordVerifyModal();
+    
+  } catch (error) {
+    console.error('Failed to verify password:', error);
+    showMessage('Failed to verify password', 'error');
   }
 }
 
@@ -1615,7 +1825,10 @@ async function updatePassword() {
     
     // 设置新密码
     const passwordHash = btoa(newPassword);
-    await chrome.storage.local.set({ passwordHash: passwordHash });
+    await chrome.storage.local.set({ 
+      passwordHash: passwordHash,
+      passwordProtectionEnabled: true
+    });
     
     // 清空输入框
     newPasswordInput.value = '';
@@ -1627,6 +1840,14 @@ async function updatePassword() {
       currentPasswordDiv.style.display = 'block';
     }
     
+    // 更新删除按钮状态
+    if (deletePasswordBtn) {
+      deletePasswordBtn.disabled = false;
+      deletePasswordBtn.style.opacity = '1';
+      deletePasswordBtn.style.cursor = 'pointer';
+      deletePasswordBtn.title = 'Delete password and all history records';
+    }
+    
     showMessage('Password updated successfully', 'success');
   } catch (error) {
     console.error('Failed to update password:', error);
@@ -1634,102 +1855,69 @@ async function updatePassword() {
   }
 }
 
-// 禁用密码保护（保留密码数据）
-async function disablePasswordProtection() {
-  if (!currentPasswordInput) {
-    showMessage('Current password input not found', 'error');
-    return;
-  }
-  
-  const currentPassword = currentPasswordInput.value;
-  if (!currentPassword) {
-    showMessage('Please enter current password to disable protection', 'error');
-    return;
-  }
-  
-  try {
-    // 验证当前密码
-    const stored = await chrome.storage.local.get(['passwordHash']);
-    if (!stored.passwordHash) {
-      showMessage('No password found to verify', 'error');
-      return;
+// 删除密码
+function removePassword() {
+  // 显示删除密码确认弹窗
+  showDeletePasswordModal();
+}
+
+// 显示删除密码确认弹窗
+function showDeletePasswordModal() {
+  if (deletePasswordModal) {
+    deletePasswordModal.style.display = 'flex';
+    // 重置复选框状态
+    if (deleteHistoryRecords) {
+      deleteHistoryRecords.checked = true;
     }
-    
-    const currentHash = btoa(currentPassword);
-    if (currentHash !== stored.passwordHash) {
-      showMessage('Current password is incorrect', 'error');
-      return;
-    }
-    
-    if (confirm('Are you sure you want to disable password protection? You can re-enable it later.')) {
-      // 只禁用保护，不删除密码数据
-      if (passwordEnabledToggle) {
-        passwordEnabledToggle.checked = false;
-      }
-      if (passwordSettings) {
-        passwordSettings.style.display = 'none';
-      }
-      
-      // 清空当前密码输入
-      currentPasswordInput.value = '';
-      
-      showMessage('Password protection disabled', 'success');
-    }
-  } catch (error) {
-    console.error('Failed to disable password protection:', error);
-    showMessage('Failed to disable password protection', 'error');
   }
 }
 
-// 删除密码（完全清除密码数据）
-async function removePassword() {
-  if (!currentPasswordInput) {
-    showMessage('Current password input not found', 'error');
-    return;
+// 隐藏删除密码确认弹窗
+function hideDeletePasswordModal() {
+  if (deletePasswordModal) {
+    deletePasswordModal.style.display = 'none';
   }
-  
-  const currentPassword = currentPasswordInput.value;
-  if (!currentPassword) {
-    showMessage('Please enter current password to delete password', 'error');
-    return;
-  }
-  
+}
+
+// 确认删除密码
+async function confirmDeletePassword() {
   try {
-    // 验证当前密码
-    const stored = await chrome.storage.local.get(['passwordHash']);
-    if (!stored.passwordHash) {
-      showMessage('No password found to verify', 'error');
-      return;
+    // 检查是否要删除历史记录
+    const deleteHistory = deleteHistoryRecords ? deleteHistoryRecords.checked : true;
+    
+    // 删除密码相关数据
+    await chrome.storage.local.remove(['passwordHash', 'passwordSalt', 'passwordProtectionEnabled']);
+    
+    // 根据用户选择决定是否删除历史记录
+    if (deleteHistory) {
+      await chrome.storage.local.remove(['historyRecords']);
+      showMessage('Password and history records deleted successfully', 'success');
+    } else {
+      showMessage('Password deleted successfully (history records preserved)', 'success');
     }
     
-    const currentHash = btoa(currentPassword);
-    if (currentHash !== stored.passwordHash) {
-      showMessage('Current password is incorrect', 'error');
-      return;
+    // 重置UI
+    if (passwordEnabledToggle) {
+      passwordEnabledToggle.checked = false;
+    }
+    if (passwordSettings) {
+      passwordSettings.style.display = 'none';
     }
     
-    if (confirm('Are you sure you want to permanently delete the password? This action cannot be undone.')) {
-      await chrome.storage.local.remove(['passwordHash']);
-      if (passwordEnabledToggle) {
-        passwordEnabledToggle.checked = false;
-      }
-      if (passwordSettings) {
-        passwordSettings.style.display = 'none';
-      }
-      if (currentPasswordDiv) {
-        currentPasswordDiv.style.display = 'none';
-      }
-      
-      // 清空所有密码输入
-      if (currentPasswordInput) currentPasswordInput.value = '';
-      if (newPasswordInput) newPasswordInput.value = '';
-      if (confirmPasswordInput) confirmPasswordInput.value = '';
-      
-      showMessage('Password permanently deleted', 'success');
-    }
+    // 清空输入框
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    
+    // 隐藏弹窗
+    hideDeletePasswordModal();
+    
+    // 更新UI
+    await updatePasswordUI();
+    
   } catch (error) {
-    console.error('Failed to remove password:', error);
-    showMessage('Failed to remove password', 'error');
+    console.error('Failed to delete password:', error);
+    showMessage('Failed to delete password', 'error');
   }
 }
 
