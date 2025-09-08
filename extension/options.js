@@ -577,7 +577,7 @@ function setupEventListeners() {
   if (deletePasswordBtn) deletePasswordBtn.addEventListener('click', removePassword);
   
   // Password verification modal
-  if (verifyCancelBtn) verifyCancelBtn.addEventListener('click', hidePasswordVerifyModal);
+  if (verifyCancelBtn) verifyCancelBtn.addEventListener('click', () => hidePasswordVerifyModal(true));
   if (verifyConfirmBtn) verifyConfirmBtn.addEventListener('click', confirmPasswordVerification);
   if (verifyPasswordInput) {
     verifyPasswordInput.addEventListener('keypress', (e) => {
@@ -591,7 +591,7 @@ function setupEventListeners() {
   if (passwordVerifyModal) {
     passwordVerifyModal.addEventListener('click', (e) => {
       if (e.target === passwordVerifyModal) {
-        hidePasswordVerifyModal();
+        hidePasswordVerifyModal(true);
       }
     });
   }
@@ -1727,25 +1727,11 @@ async function togglePasswordProtection() {
 // 启用密码保护
 async function enablePasswordProtection() {
   try {
-    // 显示密码设置区域
-    passwordSettings.style.display = 'block';
-    
     // 保存密码保护状态
     await chrome.storage.local.set({ passwordProtectionEnabled: true });
     
-    // 检查是否已有密码
-    const stored = await chrome.storage.local.get(['passwordHash']);
-    if (stored.passwordHash) {
-      // 已有密码，显示当前密码输入
-      if (currentPasswordDiv) {
-        currentPasswordDiv.style.display = 'block';
-      }
-    } else {
-      // 没有密码，隐藏当前密码输入
-      if (currentPasswordDiv) {
-        currentPasswordDiv.style.display = 'none';
-      }
-    }
+    // 更新UI状态
+    await updatePasswordUI();
     
     showMessage('Password protection enabled', 'success');
   } catch (error) {
@@ -1758,11 +1744,11 @@ async function enablePasswordProtection() {
 // 禁用密码保护
 async function disablePasswordProtection() {
   try {
-    // 隐藏密码设置区域
-    passwordSettings.style.display = 'none';
-    
     // 保存密码保护状态
     await chrome.storage.local.set({ passwordProtectionEnabled: false });
+    
+    // 更新UI状态
+    await updatePasswordUI();
     
     showMessage('Password protection disabled', 'success');
   } catch (error) {
@@ -1784,7 +1770,7 @@ function showPasswordVerifyModal() {
 }
 
 // 隐藏密码验证弹窗
-function hidePasswordVerifyModal() {
+function hidePasswordVerifyModal(restoreCheckbox = false) {
   if (passwordVerifyModal) {
     passwordVerifyModal.style.display = 'none';
     if (verifyPasswordInput) {
@@ -1792,8 +1778,8 @@ function hidePasswordVerifyModal() {
     }
   }
   
-  // 恢复复选框状态（用户取消了验证，应该保持原来的选中状态）
-  if (passwordEnabledToggle) {
+  // 只有在用户取消验证时才恢复复选框状态
+  if (restoreCheckbox && passwordEnabledToggle) {
     passwordEnabledToggle.checked = true;
   }
 }
@@ -1982,14 +1968,24 @@ async function confirmCreatePassword() {
     // 隐藏弹窗
     hideCreatePasswordModal();
     
-    // 启用密码保护
-    await enablePasswordProtection();
+    // 更新UI状态 - 确保复选框被勾选
+    if (passwordEnabledToggle) {
+      passwordEnabledToggle.checked = true;
+    }
+    
+    // 更新密码UI显示
+    await updatePasswordUI();
     
     showMessage('Password created and protection enabled successfully', 'success');
     
   } catch (error) {
     console.error('Failed to create password:', error);
     showMessage('Failed to create password', 'error');
+    
+    // 如果创建失败，恢复复选框状态
+    if (passwordEnabledToggle) {
+      passwordEnabledToggle.checked = false;
+    }
   }
 }
 
