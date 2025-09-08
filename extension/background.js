@@ -139,24 +139,9 @@ async function scheduleDelete(url, tabId = null) {
   
   if (!isMatched) return false;
   
-  // Check if already scheduled
+  // Check if already scheduled - if so, don't reschedule
   if (deletionQueue.has(url)) {
-    console.log('URL already in deletion queue, updating...');
-    const existing = deletionQueue.get(url);
-    clearTimeout(existing.timeoutId);
-    
-    // Update existing entry
-    existing.timestamp = Date.now();
-    existing.tabId = tabId;
-    
-    // Schedule deletion after delay
-    existing.timeoutId = setTimeout(async () => {
-      console.log('Executing scheduled deletion for:', url);
-      await deleteFromHistory(url);
-      deletionQueue.delete(url);
-    }, config.delaySec * 1000);
-    
-    console.log(`Updated deletion schedule for: ${url} (delay: ${config.delaySec}s)`);
+    console.log('URL already in deletion queue, skipping reschedule to prevent loops');
     return true;
   }
   
@@ -189,12 +174,16 @@ async function scheduleDelete(url, tabId = null) {
 // Delete URL from history with retry logic
 async function deleteFromHistory(url) {
   try {
+    console.log('=== deleteFromHistory START ===');
+    console.log('URL to delete:', url);
+    
     // Get page title before deletion for history record
     let pageTitle = '';
     try {
       const tabs = await chrome.tabs.query({ url: url });
       if (tabs && tabs.length > 0) {
         pageTitle = tabs[0].title || '';
+        console.log('Page title found:', pageTitle);
       }
     } catch (titleError) {
       console.log('Could not get page title:', titleError.message);
@@ -205,22 +194,29 @@ async function deleteFromHistory(url) {
     try {
       const urlObj = new URL(url);
       domain = urlObj.hostname;
+      console.log('Domain extracted:', domain);
     } catch (urlError) {
       console.log('Could not extract domain from URL:', urlError.message);
     }
     
+    console.log('Attempting to delete URL from Chrome history...');
     await chrome.history.deleteUrl({ url });
+    console.log('URL successfully deleted from Chrome history');
     
     // Record the deletion in history records
+    console.log('Recording history deletion...');
     await recordHistoryDeletion(url, pageTitle, domain);
+    console.log('History deletion recorded');
     
     // Update statistics
     config.usage.deletionsTotal++;
     config.usage.deletionsToday++;
     await chrome.storage.local.set({ usage: config.usage });
+    console.log('Statistics updated');
     
-    console.log(`Deleted from history: ${url}`);
+    console.log(`=== deleteFromHistory SUCCESS: ${url} ===`);
   } catch (error) {
+    console.error('=== deleteFromHistory ERROR ===');
     console.error('Failed to delete from history:', url, error);
     errorStats.deleteErrors++;
     
@@ -263,17 +259,8 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
   }
 });
 
-chrome.webNavigation.onCompleted.addListener(async (details) => {
-  // Only handle main frame navigations
-  if (details.frameId === 0) {
-    // For long navigation chains, only record the final URL
-    // This prevents excessive shadow history entries
-    if (details.transitionType === 'link' || details.transitionType === 'typed') {
-      const isMatched = await scheduleDelete(details.url, details.tabId);
-      await updateBadgeForTab(details.tabId, isMatched);
-    }
-  }
-});
+// Remove onCompleted listener to prevent duplicate scheduling
+// The onCommitted event is sufficient for scheduling deletions
 
 // Update badge to show site detection status
 async function updateBadgeForTab(tabId, isMatched) {
@@ -341,8 +328,24 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.url && tab.url) {
     const isMatched = shouldPurgeDomain(tab.url);
     await updateBadgeForTab(tabId, isMatched);
+    
+    // If navigating away from a monitored domain, clear any pending deletions for this tab
+    if (!isMatched) {
+      clearPendingDeletionsForTab(tabId);
+    }
   }
 });
+
+// Clear pending deletions for a specific tab
+function clearPendingDeletionsForTab(tabId) {
+  for (const [url, entry] of deletionQueue.entries()) {
+    if (entry.tabId === tabId) {
+      console.log(`Clearing pending deletion for tab ${tabId}: ${url}`);
+      clearTimeout(entry.timeoutId);
+      deletionQueue.delete(url);
+    }
+  }
+}
 
 // Handle messages from popup/options
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -404,8 +407,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       (async () => {
         try {
           console.log('Getting current tab status...');
-          const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-          console.log('Found tabs:', tabs);
+          
+          // Try multiple methods to get the current tab
+          let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          console.log('Method 1 - active: true, currentWindow: true, found tabs:', tabs);
+          
+          // If no tabs found, try without currentWindow restriction
+          if (!tabs || tabs.length === 0) {
+            tabs = await chrome.tabs.query({ active: true });
+            console.log('Method 2 - active: true, found tabs:', tabs);
+          }
+          
+          // If still no tabs found, try getting the last focused window
+          if (!tabs || tabs.length === 0) {
+            tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            console.log('Method 3 - active: true, lastFocusedWindow: true, found tabs:', tabs);
+          }
+          
+          // If still no tabs found, get all tabs and find the most recent one
+          if (!tabs || tabs.length === 0) {
+            const allTabs = await chrome.tabs.query({});
+            console.log('Method 4 - all tabs, found:', allTabs.length);
+            if (allTabs.length > 0) {
+              // Find the most recently active tab
+              tabs = [allTabs.reduce((latest, current) => {
+                return (current.lastAccessed || 0) > (latest.lastAccessed || 0) ? current : latest;
+              })];
+              console.log('Selected most recent tab:', tabs[0]);
+            }
+          }
           
           if (tabs && tabs.length > 0) {
             const tab = tabs[0];
@@ -425,40 +455,98 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   url: tab.url,
                   title: tab.title || '无标题'
                 });
-                          } catch (urlError) {
-              console.error('Failed to parse URL:', tab.url, urlError);
+              } catch (urlError) {
+                console.error('Failed to parse URL:', tab.url, urlError);
+                sendResponse({ 
+                  isMatched: false, 
+                  hostname: 'Invalid URL',
+                  url: tab.url,
+                  title: tab.title || 'No Title',
+                  error: 'URL parsing failed'
+                });
+              }
+            } else {
+              console.log('Tab has restricted URL:', tab.url);
               sendResponse({ 
                 isMatched: false, 
-                hostname: 'Invalid URL',
-                url: tab.url,
+                hostname: 'Restricted Page',
+                url: tab.url || 'No URL',
                 title: tab.title || 'No Title',
-                error: 'URL parsing failed'
+                error: 'Cannot access this page'
               });
             }
           } else {
-            console.log('Tab has restricted URL:', tab.url);
+            console.log('No active tabs found');
             sendResponse({ 
               isMatched: false, 
-              hostname: 'Restricted Page',
-              url: tab.url || 'No URL',
-              title: tab.title || 'No Title',
-              error: 'Cannot access this page'
+              error: 'No active tab found' 
             });
           }
-        } else {
-          console.log('No active tabs found');
+        } catch (error) {
+          console.error('Failed to get current tab status:', error);
           sendResponse({ 
             isMatched: false, 
-            error: 'No active tab found' 
+            error: error.message || 'Unknown error' 
           });
         }
-      } catch (error) {
-        console.error('Failed to get current tab status:', error);
-        sendResponse({ 
-          isMatched: false, 
-          error: error.message || 'Unknown error' 
-        });
-      }
+      })();
+      return true; // Keep message channel open for async response
+      
+    case 'executeDeletion':
+      // Execute immediate deletion for current tab
+      (async () => {
+        try {
+          console.log('=== executeDeletion START ===');
+          
+          // Try multiple methods to get the current tab
+          let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          console.log('Method 1 - active: true, currentWindow: true, found tabs:', tabs);
+          
+          // If no tabs found, try without currentWindow restriction
+          if (!tabs || tabs.length === 0) {
+            tabs = await chrome.tabs.query({ active: true });
+            console.log('Method 2 - active: true, found tabs:', tabs);
+          }
+          
+          // If still no tabs found, try getting the last focused window
+          if (!tabs || tabs.length === 0) {
+            tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            console.log('Method 3 - active: true, lastFocusedWindow: true, found tabs:', tabs);
+          }
+          
+          // If still no tabs found, get all tabs and find the most recent one
+          if (!tabs || tabs.length === 0) {
+            const allTabs = await chrome.tabs.query({});
+            console.log('Method 4 - all tabs, found:', allTabs.length);
+            if (allTabs.length > 0) {
+              // Find the most recently active tab
+              tabs = [allTabs.reduce((latest, current) => {
+                return (current.lastAccessed || 0) > (latest.lastAccessed || 0) ? current : latest;
+              })];
+              console.log('Selected most recent tab:', tabs[0]);
+            }
+          }
+          
+          if (tabs && tabs.length > 0) {
+            const tab = tabs[0];
+            console.log('Current tab for deletion:', tab);
+            
+            if (tab.url && shouldPurgeDomain(tab.url)) {
+              console.log('Executing immediate deletion for:', tab.url);
+              await deleteFromHistory(tab.url);
+              sendResponse({ success: true });
+            } else {
+              console.log('URL not eligible for deletion:', tab.url);
+              sendResponse({ success: false, error: 'URL not eligible for deletion' });
+            }
+          } else {
+            console.log('No active tabs found for deletion');
+            sendResponse({ success: false, error: 'No active tab found' });
+          }
+        } catch (error) {
+          console.error('Failed to execute deletion:', error);
+          sendResponse({ success: false, error: error.message });
+        }
       })();
       return true; // Keep message channel open for async response
       
@@ -506,7 +594,10 @@ resetDailyStats();
 // Record history deletion for tracking
 async function recordHistoryDeletion(url, title, domain) {
   try {
-    console.log('recordHistoryDeletion called for:', url, 'title:', title, 'domain:', domain);
+    console.log('=== recordHistoryDeletion START ===');
+    console.log('URL:', url);
+    console.log('Title:', title);
+    console.log('Domain:', domain);
     
     // Check if auto recording is enabled
     const settings = await chrome.storage.local.get(['historySettings']);
@@ -514,9 +605,12 @@ async function recordHistoryDeletion(url, title, domain) {
     
     console.log('History settings:', historySettings);
     
+    // If autoRecord is false, enable it automatically
     if (!historySettings.autoRecord) {
-      console.log('Auto recording is disabled, skipping record');
-      return; // Auto recording is disabled
+      console.log('Auto recording is disabled, enabling it automatically...');
+      historySettings.autoRecord = true;
+      await chrome.storage.local.set({ historySettings: historySettings });
+      console.log('Auto recording enabled successfully');
     }
     
     // Load existing history records
@@ -524,6 +618,7 @@ async function recordHistoryDeletion(url, title, domain) {
     let historyRecords = stored.historyRecords || [];
     
     console.log('Existing history records count:', historyRecords.length);
+    console.log('Existing records:', historyRecords);
     
     // Create new record
     const record = {
@@ -538,25 +633,37 @@ async function recordHistoryDeletion(url, title, domain) {
     
     // Add to beginning of array
     historyRecords.unshift(record);
+    console.log('After adding new record, count:', historyRecords.length);
     
     // Apply retention policy
     const retentionTime = historySettings.retentionDays * 24 * 60 * 60 * 1000;
     const cutoffTime = Date.now() - retentionTime;
     historyRecords = historyRecords.filter(record => record.deletedAt > cutoffTime);
+    console.log('After retention filter, count:', historyRecords.length);
     
     // Limit to max records
     if (historyRecords.length > historySettings.maxRecords) {
       historyRecords = historyRecords.slice(0, historySettings.maxRecords);
+      console.log('After max records limit, count:', historyRecords.length);
     }
     
     console.log('Final history records count:', historyRecords.length);
+    console.log('Final records:', historyRecords);
     
     // Save updated records
+    console.log('Saving records to storage...');
     await chrome.storage.local.set({ historyRecords: historyRecords });
+    console.log('Records saved to storage');
     
-    console.log(`History deletion recorded successfully: ${url}`);
+    // Verify the save
+    const verify = await chrome.storage.local.get(['historyRecords']);
+    console.log('Verification - stored records count:', verify.historyRecords?.length || 0);
+    console.log('Verification - stored records:', verify.historyRecords);
+    
+    console.log(`=== recordHistoryDeletion SUCCESS: ${url} ===`);
     
   } catch (error) {
+    console.error('=== recordHistoryDeletion ERROR ===');
     console.error('Failed to record history deletion:', error);
   }
 }

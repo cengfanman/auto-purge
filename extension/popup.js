@@ -84,7 +84,11 @@ async function loadData() {
 
 // 开始倒计时
 function startCountdown(seconds) {
+  console.log('=== POPUP startCountdown START ===');
   console.log(`Starting countdown for ${seconds} seconds`);
+  console.log('Current config:', config);
+  console.log('isDeletionInProgress:', isDeletionInProgress);
+  console.log('countdownInterval:', countdownInterval);
   
   // 清除之前的倒计时
   stopCountdown();
@@ -98,6 +102,8 @@ function startCountdown(seconds) {
   siteStatus.style.display = 'none';
   removalStatus.style.display = 'none';
   
+  console.log('Countdown UI updated, starting interval...');
+  
   // 设置倒计时间隔
   countdownInterval = setInterval(() => {
     currentCountdown--;
@@ -108,13 +114,14 @@ function startCountdown(seconds) {
       console.log(`Countdown: ${currentCountdown}s remaining`);
     } else {
       // 倒计时结束，执行删除
-      console.log('Countdown finished, executing deletion');
+      console.log('=== COUNTDOWN FINISHED, EXECUTING DELETION ===');
       stopCountdown();
       executeDeletion();
     }
   }, 1000);
   
   isDeletionInProgress = true;
+  console.log('=== POPUP startCountdown SUCCESS ===');
 }
 
 // 停止倒计时
@@ -128,33 +135,41 @@ function stopCountdown() {
 
 // 执行删除操作
 async function executeDeletion() {
-  console.log('Executing deletion...');
+  console.log('=== POPUP executeDeletion START ===');
+  console.log('Current config:', config);
   
   try {
     // 显示删除中状态
-    countdown.style.display = 'none';
     siteStatus.style.display = 'block';
     siteStatus.textContent = 'Clearing history...';
     
-    // 模拟删除操作（实际应该调用 background script）
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Sending message to background script...');
+    // 调用 background script 执行真正的删除
+    const response = await chrome.runtime.sendMessage({ action: 'executeDeletion' });
+    console.log('Background script response:', response);
     
-    // 删除完成，显示 "Removed" 状态
-    showRemovedStatus();
-    
-    // 更新统计数据
-    await loadStats();
-    
-    console.log('Deletion completed successfully');
+    if (response && response.success) {
+      // 删除完成，显示 "Removed" 状态
+      console.log('Deletion successful, showing removed status');
+      showRemovedStatus();
+      
+      // 更新统计数据
+      await loadStats();
+      
+      console.log('=== POPUP executeDeletion SUCCESS ===');
+    } else {
+      console.error('Background script returned error:', response);
+      throw new Error(response?.error || 'Deletion failed');
+    }
     
   } catch (error) {
+    console.error('=== POPUP executeDeletion ERROR ===');
     console.error('Deletion failed:', error);
     showError('Failed to clear history');
     
     // 恢复原始状态
-    countdown.style.display = 'none';
     siteStatus.style.display = 'block';
-    siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+    siteStatus.textContent = `History will be cleared immediately`;
   }
 }
 
@@ -162,19 +177,22 @@ async function executeDeletion() {
 function showRemovedStatus() {
   console.log('Showing removed status');
   
-  // 隐藏倒计时和状态
-  countdown.style.display = 'none';
+  // 隐藏状态
   siteStatus.style.display = 'none';
   
   // 显示删除完成状态
   removalStatus.style.display = 'block';
+  
+  // 设置删除完成标志，防止重新启动删除
+  isDeletionInProgress = true;
   
   // 5秒后恢复原始状态
   setTimeout(() => {
     if (removalStatus.style.display !== 'none') {
       removalStatus.style.display = 'none';
       siteStatus.style.display = 'block';
-      siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+      siteStatus.textContent = `History will be cleared immediately`;
+      isDeletionInProgress = false;
     }
   }, 5000);
 }
@@ -183,15 +201,14 @@ function showRemovedStatus() {
 function resetSiteStatus() {
   console.log('Resetting site status');
   
-  // 停止倒计时
-  stopCountdown();
-  
   // 隐藏所有状态
-  countdown.style.display = 'none';
   removalStatus.style.display = 'none';
   
   // 显示原始状态
   siteStatus.style.display = 'block';
+  
+  // 重置状态
+  isDeletionInProgress = false;
 }
 
 // Load current tab status
@@ -311,19 +328,26 @@ function updateCurrentSiteUI(tabStatus) {
     console.error('Tab status error:', tabStatus.error);
   } else if (tabStatus.isMatched) {
     // Site is detected - 启动倒计时
+    console.log('=== SITE DETECTED AS MATCHED ===');
+    console.log('tabStatus:', tabStatus);
+    console.log('config.enabled:', config.enabled);
+    console.log('isDeletionInProgress:', isDeletionInProgress);
+    console.log('countdownInterval:', countdownInterval);
+    
     siteIcon.textContent = '🔞';
     siteName.textContent = tabStatus.hostname || 'Adult Website';
     
     // 显示检测徽章
     detectionBadge.style.display = 'flex';
     
-    // 只有在没有倒计时进行且扩展启用时才启动倒计时
-    if (config.enabled && !isDeletionInProgress && !countdownInterval) {
-      console.log('Starting countdown for detected site');
-      startCountdown(config.delaySec);
+    // 直接执行删除，不需要倒计时
+    if (config.enabled && !isDeletionInProgress) {
+      console.log('=== CONDITIONS MET, EXECUTING DELETION DIRECTLY ===');
+      executeDeletion();
     } else {
-      console.log('Countdown already in progress or extension disabled, showing status only');
-      siteStatus.textContent = `History will be cleared in ${config.delaySec} seconds`;
+      console.log('=== CONDITIONS NOT MET, SHOWING STATUS ONLY ===');
+      console.log('Reason: enabled=' + config.enabled + ', inProgress=' + isDeletionInProgress);
+      siteStatus.textContent = `History will be cleared immediately`;
     }
     
     console.log('Site detected as adult content');
@@ -384,9 +408,9 @@ async function refreshStats() {
   try {
     await loadStats();
     
-    // 如果倒计时正在进行，不要重新检查标签页状态，避免重复启动
-    // 只在没有倒计时时检查状态
-    if (!isDeletionInProgress && config.enabled) {
+    // 如果删除已完成，不要重新检查标签页状态
+    // 只在没有删除完成状态时检查状态
+    if (!isDeletionInProgress && config.enabled && removalStatus.style.display === 'none') {
       // 重新检查当前标签页状态
       await loadCurrentTabStatus();
     }
@@ -536,6 +560,26 @@ function showError(message) {
   }, 5000);
 }
 
+// 测试调试函数
+function testDebug() {
+  console.log('=== TEST DEBUG START ===');
+  console.log('Current config:', config);
+  console.log('isDeletionInProgress:', isDeletionInProgress);
+  console.log('countdownInterval:', countdownInterval);
+  console.log('currentCountdown:', currentCountdown);
+  
+  // 显示在页面上
+  const debugInfo = `
+Config: ${JSON.stringify(config, null, 2)}
+isDeletionInProgress: ${isDeletionInProgress}
+countdownInterval: ${!!countdownInterval}
+currentCountdown: ${currentCountdown}
+  `;
+  
+  alert('Debug Info:\n' + debugInfo);
+  console.log('=== TEST DEBUG END ===');
+}
+
 // Export functions for debugging
 window.popupDebug = {
   loadData,
@@ -564,5 +608,10 @@ window.popupDebug = {
     isDeletionInProgress = false;
     currentCountdown = 0;
     console.log('Force reset complete');
-  }
+  },
+  // 测试调试
+  testDebug: () => testDebug()
 };
+
+// 全局测试函数
+window.testDebug = testDebug;
