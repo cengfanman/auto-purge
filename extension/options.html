@@ -703,11 +703,11 @@
             <!-- Debug buttons -->
             <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
               <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
-              <button class="btn btn-secondary" onclick="console.log('Preset domains:', window.optionsDebug.presetDomains)">Log Preset Domains</button>
-              <button class="btn btn-secondary" onclick="window.optionsDebug.loadData()">Reload Data</button>
-              <button class="btn btn-secondary" onclick="window.optionsDebug.testAddDomain()">Test Add Domain</button>
-              <button class="btn btn-secondary" onclick="window.optionsDebug.testRemoveDomain()">Test Remove Domain</button>
-              <button class="btn btn-primary" onclick="forceRefreshDomains()">Force Refresh</button>
+              <button class="btn btn-secondary" id="logPresetDomainsBtn">Log Preset Domains</button>
+              <button class="btn btn-secondary" id="reloadDataBtn">Reload Data</button>
+              <button class="btn btn-secondary" id="testAddDomainBtn">Test Add Domain</button>
+              <button class="btn btn-secondary" id="testRemoveDomainBtn">Test Remove Domain</button>
+              <button class="btn btn-primary" id="forceRefreshDomainsBtn">Force Refresh</button>
             </div>
           </div>
           
@@ -727,8 +727,8 @@
             <!-- Debug buttons -->
             <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
               <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
-              <button class="btn btn-secondary" onclick="console.log('Custom domains:', window.optionsDebug.config.userDomains)">Log Custom Domains</button>
-              <button class="btn btn-secondary" onclick="window.optionsDebug.updateDomainLists()">Refresh Lists</button>
+              <button class="btn btn-secondary" id="logCustomDomainsBtn">Log Custom Domains</button>
+              <button class="btn btn-secondary" id="refreshListsBtn">Refresh Lists</button>
             </div>
           </div>
         </div>

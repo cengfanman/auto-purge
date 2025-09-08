@@ -42,10 +42,18 @@ function setupNavigation() {
       
       // 特殊处理：如果是历史记录页面，强制刷新内容
       if (targetSection === 'history') {
-        console.log('History section activated, refreshing content...');
-        setTimeout(() => {
-          updateHistoryUI();
-        }, 100);
+        console.log('=== HISTORY SECTION ACTIVATED ===');
+        console.log('Refreshing history content...');
+        setTimeout(async () => {
+          console.log('Calling updateHistoryUI...');
+          // 确保DOM元素存在
+          if (!historyList) {
+            console.log('History list element not found, re-getting DOM elements...');
+            getDOMElements();
+          }
+          await updateHistoryUI();
+          console.log('updateHistoryUI completed');
+        }, 200);
       }
     });
   });
@@ -283,6 +291,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // 设置事件监听器
   setupEventListeners();
+  
+  // 设置历史记录按钮的事件委托
+  setupHistoryButtonDelegation();
+  
+  // 设置调试按钮的事件监听器
+  setupDebugButtonListeners();
   
   // 更新 UI
   updateUI();
@@ -528,6 +542,91 @@ async function loadHistorySettings() {
     if (maxRecordsInput) maxRecordsInput.value = 1000;
     if (retentionDaysInput) retentionDaysInput.value = 30;
   }
+}
+
+// 设置历史记录按钮的事件委托
+function setupHistoryButtonDelegation() {
+  console.log('Setting up history button delegation...');
+  
+  // 使用事件委托处理历史记录按钮点击
+  document.addEventListener('click', function(event) {
+    // View按钮
+    if (event.target.classList.contains('view-history-btn')) {
+      event.preventDefault();
+      const recordId = event.target.getAttribute('data-record-id');
+      console.log('View button clicked for record:', recordId);
+      viewHistoryRecord(recordId);
+    }
+    
+    // Delete按钮
+    if (event.target.classList.contains('delete-history-btn')) {
+      event.preventDefault();
+      const recordId = event.target.getAttribute('data-record-id');
+      console.log('Delete button clicked for record:', recordId);
+      deleteHistoryRecord(recordId);
+    }
+  });
+  
+  console.log('History button delegation setup complete');
+}
+
+// 设置调试按钮的事件监听器
+function setupDebugButtonListeners() {
+  console.log('Setting up debug button listeners...');
+  
+  // 获取调试按钮
+  const logPresetDomainsBtn = document.getElementById('logPresetDomainsBtn');
+  const reloadDataBtn = document.getElementById('reloadDataBtn');
+  const testAddDomainBtn = document.getElementById('testAddDomainBtn');
+  const testRemoveDomainBtn = document.getElementById('testRemoveDomainBtn');
+  const forceRefreshDomainsBtn = document.getElementById('forceRefreshDomainsBtn');
+  const logCustomDomainsBtn = document.getElementById('logCustomDomainsBtn');
+  const refreshListsBtn = document.getElementById('refreshListsBtn');
+  
+  // 添加事件监听器
+  if (logPresetDomainsBtn) {
+    logPresetDomainsBtn.addEventListener('click', () => {
+      console.log('Preset domains:', window.optionsDebug?.presetDomains);
+    });
+  }
+  
+  if (reloadDataBtn) {
+    reloadDataBtn.addEventListener('click', () => {
+      window.optionsDebug?.loadData();
+    });
+  }
+  
+  if (testAddDomainBtn) {
+    testAddDomainBtn.addEventListener('click', () => {
+      window.optionsDebug?.testAddDomain();
+    });
+  }
+  
+  if (testRemoveDomainBtn) {
+    testRemoveDomainBtn.addEventListener('click', () => {
+      window.optionsDebug?.testRemoveDomain();
+    });
+  }
+  
+  if (forceRefreshDomainsBtn) {
+    forceRefreshDomainsBtn.addEventListener('click', () => {
+      forceRefreshDomains();
+    });
+  }
+  
+  if (logCustomDomainsBtn) {
+    logCustomDomainsBtn.addEventListener('click', () => {
+      console.log('Custom domains:', window.optionsDebug?.config?.userDomains);
+    });
+  }
+  
+  if (refreshListsBtn) {
+    refreshListsBtn.addEventListener('click', () => {
+      window.optionsDebug?.updateDomainLists();
+    });
+  }
+  
+  console.log('Debug button listeners setup complete');
 }
 
 // Setup event listeners
@@ -1522,12 +1621,20 @@ async function removePassword() {
 
 // 更新历史记录 UI
 async function updateHistoryUI() {
+  console.log('=== updateHistoryUI START ===');
   console.log('Updating history UI...');
+  console.log('historyList element:', historyList);
+  
+  if (!historyList) {
+    console.error('historyList element not found!');
+    return;
+  }
   
   try {
     // 获取历史记录设置
     const settings = await chrome.storage.local.get(['historySettings']);
     const historySettings = settings.historySettings || { autoRecord: true, maxRecords: 1000, retentionDays: 30 };
+    console.log('History settings loaded:', historySettings);
     
     // 更新设置 UI
     if (autoRecordToggle) {
@@ -1542,7 +1649,9 @@ async function updateHistoryUI() {
     
     // 获取历史记录
     const stored = await chrome.storage.local.get(['historyRecords']);
-    let historyRecords = stored.historyRecords || [];
+    historyRecords = stored.historyRecords || [];
+    console.log('History records loaded:', historyRecords.length, 'records');
+    console.log('History records:', historyRecords);
     
     // 计算统计信息
     const now = Date.now();
@@ -1552,6 +1661,8 @@ async function updateHistoryUI() {
     const todayCount = historyRecords.filter(record => record.deletedAt >= today).length;
     const weekCount = historyRecords.filter(record => record.deletedAt >= weekAgo).length;
     const totalCount = historyRecords.length;
+    
+    console.log('Statistics calculated:', { todayCount, weekCount, totalCount });
     
     // 更新统计显示
     if (totalRecords) totalRecords.textContent = totalCount;
@@ -1566,8 +1677,9 @@ async function updateHistoryUI() {
     // 更新历史记录列表
     updateHistoryList(historyRecords);
     
-    console.log('History UI updated successfully');
+    console.log('=== updateHistoryUI SUCCESS ===');
   } catch (error) {
+    console.error('=== updateHistoryUI ERROR ===');
     console.error('Failed to update history UI:', error);
   }
 }
@@ -2182,10 +2294,10 @@ function updateHistoryList() {
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button onclick="viewHistoryRecord('${record.id}')" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+          <button class="view-history-btn" data-record-id="${record.id}" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             View
           </button>
-          <button onclick="deleteHistoryRecord('${record.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+          <button class="delete-history-btn" data-record-id="${record.id}" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             Delete
           </button>
         </div>
@@ -2355,10 +2467,10 @@ function updateHistoryListWithFilter(filteredRecords) {
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button onclick="viewHistoryRecord('${record.id}')" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+          <button class="view-history-btn" data-record-id="${record.id}" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             View
           </button>
-          <button onclick="deleteHistoryRecord('${record.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+          <button class="delete-history-btn" data-record-id="${record.id}" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
             Delete
           </button>
         </div>
@@ -2391,16 +2503,15 @@ async function updateHistorySettings() {
 // 查看历史记录详情
 function viewHistoryRecord(recordId) {
   const record = historyRecords.find(r => r.id === recordId);
-  if (!record) return;
+  if (!record) {
+    console.error('Record not found:', recordId);
+    return;
+  }
   
-  const details = `
-URL: ${record.url}
-Title: ${record.title || 'No title'}
-Deleted: ${new Date(record.deletedAt).toLocaleString()}
-Domain: ${record.domain || 'Unknown'}
-  `;
+  console.log('Opening record in new tab:', record.url);
   
-  alert(details);
+  // 在新标签页中打开URL
+  chrome.tabs.create({ url: record.url });
 }
 
 // 删除单个历史记录
