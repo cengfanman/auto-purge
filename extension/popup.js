@@ -28,6 +28,7 @@ const upgradeBtn = document.getElementById('upgradeBtn');
 const helpLink = document.getElementById('helpLink');
 const feedbackLink = document.getElementById('feedbackLink');
 const privacyLink = document.getElementById('privacyLink');
+const planBadge = document.getElementById('plan-badge');
 
 // Current configuration
 let config = {};
@@ -41,8 +42,16 @@ let isDeletionInProgress = false;
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup initialized');
   await loadData();
+  await updatePlanBadge();
   setupEventListeners();
   updateUI();
+  
+  // Listen for license changes
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'license:changed') {
+      updatePlanBadge();
+    }
+  });
   
   // Refresh data periodically while popup is open
   setInterval(refreshStats, 3000);
@@ -612,6 +621,37 @@ window.popupDebug = {
   // 测试调试
   testDebug: () => testDebug()
 };
+
+// Update plan badge based on license state
+async function updatePlanBadge() {
+  if (!planBadge) return;
+  
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    const license = response || { plan: 'free' };
+    
+    // Reset classes
+    planBadge.className = 'ap-badge';
+    
+    // Update badge based on plan
+    if (license.plan === 'pro') {
+      planBadge.classList.add('ap-badge--pro');
+      planBadge.textContent = 'Pro';
+    } else if (license.plan === 'pro_trial') {
+      planBadge.classList.add('ap-badge--trial');
+      planBadge.textContent = 'Trial';
+    } else {
+      planBadge.classList.add('ap-badge--free');
+      planBadge.textContent = 'Free';
+    }
+    
+  } catch (error) {
+    console.error('Failed to update plan badge:', error);
+    // Default to free on error
+    planBadge.className = 'ap-badge ap-badge--free';
+    planBadge.textContent = 'Free';
+  }
+}
 
 // 全局测试函数
 window.testDebug = testDebug;

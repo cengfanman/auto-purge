@@ -70,9 +70,6 @@ let planBadge = null;
 let signInBtn = null;
 let signUpBtn = null;
 let upgradeBtn = null;
-let enabledToggle = null;
-let delayInput = null;
-let freeLimitInput = null;
 let presetDomainsList = null;
 let customDomainsList = null;
 let newDomainInput = null;
@@ -157,9 +154,6 @@ function getDOMElements() {
   signInBtn = document.getElementById('signInBtn');
   signUpBtn = document.getElementById('signUpBtn');
   upgradeBtn = document.getElementById('upgradeBtn');
-  enabledToggle = document.getElementById('enabledToggle');
-  delayInput = document.getElementById('delayInput');
-  freeLimitInput = document.getElementById('freeLimitInput');
   shadowHistoryToggle = document.getElementById('shadowHistoryToggle');
   analyticsToggle = document.getElementById('analyticsToggle');
   prioritySupportToggle = document.getElementById('prioritySupportToggle');
@@ -300,6 +294,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // 设置调试按钮的事件监听器
   setupDebugButtonListeners();
+  
+  // 初始化许可证管理
+  initializeLicenseManagement();
   
   // 更新 UI
   updateUI();
@@ -649,10 +646,6 @@ function setupEventListeners() {
   if (signUpBtn) signUpBtn.addEventListener('click', showSignUpModal);
   if (upgradeBtn) upgradeBtn.addEventListener('click', showUpgradeModal);
   
-  // Settings toggles
-  if (enabledToggle) enabledToggle.addEventListener('change', updateConfig);
-  if (delayInput) delayInput.addEventListener('change', updateConfig);
-  if (freeLimitInput) freeLimitInput.addEventListener('change', updateConfig);
   
   // Pro feature toggles
   if (shadowHistoryToggle) shadowHistoryToggle.addEventListener('change', updateProFeatures);
@@ -770,10 +763,6 @@ function setupEventListeners() {
 function updateUI() {
   console.log('Updating UI...');
   
-  // Update toggles
-  if (enabledToggle) enabledToggle.checked = config.enabled;
-  if (delayInput) delayInput.value = config.delaySec;
-  if (freeLimitInput) freeLimitInput.value = config.freeLimit;
   
   // Update pro features
   if (shadowHistoryToggle) shadowHistoryToggle.checked = config.plan === 'pro' && config.shadowHistory;
@@ -1005,18 +994,7 @@ async function updateConfig() {
   try {
     const updates = {};
     
-    if (enabledToggle.checked !== config.enabled) {
-      updates.enabled = enabledToggle.checked;
-    }
-    
-    if (parseInt(delayInput.value) !== config.delaySec) {
-      updates.delaySec = parseInt(delayInput.value);
-    }
-    
-    if (parseInt(freeLimitInput.value) !== config.freeLimit) {
-      updates.freeLimit = parseInt(freeLimitInput.value);
-    }
-    
+    // No general settings to update anymore
     if (Object.keys(updates).length > 0) {
       await chrome.runtime.sendMessage({ 
         action: 'updateConfig', 
@@ -1501,6 +1479,27 @@ async function togglePasswordProtection() {
   const enabled = passwordEnabledToggle.checked;
   
   if (enabled) {
+    // Check for Pro license first
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+      const license = response || { plan: 'free' };
+      
+      if (license.plan === 'free') {
+        // Revert checkbox state
+        passwordEnabledToggle.checked = false;
+        
+        // Show upgrade modal
+        showUpgradeModal('Password Protection is a Pro feature', 'Secure your AutoPurge settings with password protection.');
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check license:', error);
+      // On error, assume free plan
+      passwordEnabledToggle.checked = false;
+      showUpgradeModal('Password Protection is a Pro feature', 'Secure your AutoPurge settings with password protection.');
+      return;
+    }
+    
     // 启用密码保护 - 需要设置密码
     const password = prompt('Enter a password to protect AutoPurge settings:');
     if (!password) {
@@ -2614,6 +2613,767 @@ async function reloadPresetDomains() {
 window.viewHistoryRecord = viewHistoryRecord;
 window.deleteHistoryRecord = deleteHistoryRecord;
 window.addHistoryRecord = addHistoryRecord;
+
+// ============ LICENSE MANAGEMENT FUNCTIONALITY ============
+
+// License management DOM elements
+let currentPlanBadge = null;
+let currentPlanStatus = null;
+let licenseInfo = null;
+let licenseCode = null;
+let manageLicenseBtn = null;
+let buyCoinbaseBtn = null;
+let buyPaypalBtn = null;
+let licenseKeyInput = null;
+let activateLicenseBtn = null;
+let pasteLicenseBtn = null;
+let licenseMessage = null;
+
+// History overlay elements
+let historyOverlay = null;
+let historyOverlayTitle = null;
+let historyOverlayDescription = null;
+let historyBuyCoinbase = null;
+let historyLicenseInput = null;
+let historyActivateLicense = null;
+
+// Initialize license management functionality
+function initializeLicenseManagement() {
+  console.log('Initializing license management...');
+  
+  // Get DOM elements
+  currentPlanBadge = document.getElementById('current-plan-badge');
+  currentPlanStatus = document.getElementById('current-plan-status');
+  licenseInfo = document.getElementById('license-info');
+  licenseCode = document.getElementById('license-code');
+  manageLicenseBtn = document.getElementById('manage-license-btn');
+  buyCoinbaseBtn = document.getElementById('buy-coinbase-btn');
+  buyPaypalBtn = document.getElementById('buy-paypal-btn');
+  licenseKeyInput = document.getElementById('license-key-input');
+  activateLicenseBtn = document.getElementById('activate-license-btn');
+  pasteLicenseBtn = document.getElementById('paste-license-btn');
+  licenseMessage = document.getElementById('license-message');
+  
+  // Get history overlay elements
+  historyOverlay = document.getElementById('historyOverlay');
+  historyOverlayTitle = document.getElementById('historyOverlayTitle');
+  historyOverlayDescription = document.getElementById('historyOverlayDescription');
+  historyBuyCoinbase = document.getElementById('history-buy-coinbase');
+  historyLicenseInput = document.getElementById('history-license-input');
+  historyActivateLicense = document.getElementById('history-activate-license');
+  
+  // Set up event listeners
+  if (buyCoinbaseBtn) {
+    buyCoinbaseBtn.addEventListener('click', handleCoinbasePurchase);
+  }
+  
+  if (buyPaypalBtn) {
+    buyPaypalBtn.addEventListener('click', handlePaypalPurchase);
+  }
+  
+  if (activateLicenseBtn) {
+    activateLicenseBtn.addEventListener('click', handleLicenseActivation);
+  }
+  
+  if (pasteLicenseBtn) {
+    pasteLicenseBtn.addEventListener('click', handlePasteLicense);
+  }
+  
+  if (manageLicenseBtn) {
+    manageLicenseBtn.addEventListener('click', handleManageLicense);
+  }
+  
+  // Set up history overlay event listeners
+  if (historyBuyCoinbase) {
+    historyBuyCoinbase.addEventListener('click', handleCoinbasePurchase);
+  }
+  
+  if (historyActivateLicense) {
+    historyActivateLicense.addEventListener('click', handleHistoryLicenseActivation);
+  }
+  
+  // Listen for license changes from background
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'license:changed') {
+      updateLicenseUI();
+    }
+  });
+  
+  // Initial UI update
+  updateLicenseUI();
+}
+
+// Update license UI based on current state
+async function updateLicenseUI() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    const license = response || { plan: 'free' };
+    
+    // Update plan badge
+    if (currentPlanBadge) {
+      currentPlanBadge.className = 'ap-badge';
+      currentPlanBadge.textContent = 'Free';
+      
+      if (license.plan === 'pro') {
+        currentPlanBadge.classList.add('ap-badge--pro');
+        currentPlanBadge.textContent = 'Pro';
+      } else if (license.plan === 'pro_trial') {
+        currentPlanBadge.classList.add('ap-badge--trial');
+        currentPlanBadge.textContent = 'Trial';
+      } else {
+        currentPlanBadge.classList.add('ap-badge--free');
+      }
+    }
+    
+    // Update plan status
+    if (currentPlanStatus) {
+      if (license.plan === 'free') {
+        currentPlanStatus.textContent = 'Basic features';
+      } else {
+        const expiry = license.expiresAt ? new Date(license.expiresAt) : null;
+        if (expiry) {
+          const now = new Date();
+          const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+          if (daysLeft > 0) {
+            currentPlanStatus.textContent = `Premium features • ${daysLeft} days left`;
+          } else {
+            currentPlanStatus.textContent = 'Premium features • Expired';
+          }
+        } else {
+          currentPlanStatus.textContent = 'Premium features';
+        }
+      }
+    }
+    
+    // Update license info
+    if (licenseInfo && licenseCode) {
+      if (license.licCodeMasked && license.plan !== 'free') {
+        licenseInfo.style.display = 'block';
+        licenseCode.textContent = license.licCodeMasked;
+      } else {
+        licenseInfo.style.display = 'none';
+      }
+    }
+    
+    // Update manage button
+    if (manageLicenseBtn) {
+      if (license.plan !== 'free') {
+        manageLicenseBtn.style.display = 'inline-block';
+      } else {
+        manageLicenseBtn.style.display = 'none';
+      }
+    }
+    
+    // Update history overlay
+    updateHistoryOverlay(license);
+    
+  } catch (error) {
+    console.error('Failed to update license UI:', error);
+  }
+}
+
+// Handle Coinbase purchase
+async function handleCoinbasePurchase() {
+  try {
+    showLicenseMessage('Opening Coinbase checkout...', 'info');
+    
+    const response = await chrome.runtime.sendMessage({
+      action: 'checkout:create',
+      provider: 'coinbase',
+      productCode: 'autopurge_pro_001'
+    });
+    
+    if (response && response.ok) {
+      if (response.tabError) {
+        // Tab creation failed, provide manual link
+        showLicenseMessage(
+          `Checkout created! If the page didn't open automatically, <a href="${response.hosted_url}" target="_blank">click here to open Coinbase checkout</a>. Complete your purchase and return here to activate your license.`, 
+          'warning'
+        );
+      } else {
+        showLicenseMessage('Redirected to Coinbase Commerce. Complete your purchase and return here to activate your license.', 'success');
+      }
+    } else {
+      throw new Error(response?.error || 'Checkout failed');
+    }
+  } catch (error) {
+    console.error('Coinbase purchase failed:', error);
+    showLicenseMessage('Failed to open checkout. Please try again.', 'error');
+  }
+}
+
+// Handle PayPal purchase (disabled for now)
+function handlePaypalPurchase() {
+  showLicenseMessage('PayPal integration coming soon!', 'info');
+}
+
+// Handle license activation
+async function handleLicenseActivation() {
+  const licenseKey = licenseKeyInput?.value?.trim();
+  
+  if (!licenseKey) {
+    showLicenseMessage('Please enter a license key', 'error');
+    return;
+  }
+  
+  try {
+    // Show loading state
+    if (activateLicenseBtn) {
+      activateLicenseBtn.textContent = 'Activating...';
+      activateLicenseBtn.disabled = true;
+    }
+    
+    showLicenseMessage('Activating license...', 'info');
+    
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+    
+    if (response && response.ok) {
+      showLicenseMessage('License activated successfully! Welcome to AutoPurge Pro!', 'success');
+      licenseKeyInput.value = '';
+      updateLicenseUI();
+    } else {
+      throw new Error(response?.error || 'Activation failed');
+    }
+    
+  } catch (error) {
+    console.error('License activation failed:', error);
+    showLicenseMessage(error.message, 'error');
+  } finally {
+    // Reset button state
+    if (activateLicenseBtn) {
+      activateLicenseBtn.textContent = 'Activate License';
+      activateLicenseBtn.disabled = false;
+    }
+  }
+}
+
+// Handle paste license key
+async function handlePasteLicense() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (licenseKeyInput && text.trim()) {
+      licenseKeyInput.value = text.trim();
+      showLicenseMessage('License key pasted from clipboard', 'success');
+    } else {
+      showLicenseMessage('No license key found in clipboard', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to paste from clipboard:', error);
+    showLicenseMessage('Failed to paste from clipboard. Please paste manually.', 'error');
+  }
+}
+
+// Handle manage license
+async function handleManageLicense() {
+  try {
+    showLicenseMessage('Loading license information...', 'info');
+    
+    // Get current license from storage
+    const stored = await chrome.storage.local.get(['license']);
+    if (!stored.license || !stored.license.licCodeMasked) {
+      showLicenseMessage('No license found. Please activate a license first.', 'error');
+      return;
+    }
+    
+    // Get full license key from user
+    const licenseKey = prompt('Please enter your full license key to manage devices:');
+    if (!licenseKey || !licenseKey.trim()) {
+      showLicenseMessage('License key is required for device management.', 'error');
+      return;
+    }
+    
+    // Get license management data
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:manage',
+      licenseKey: licenseKey.trim()
+    });
+    
+    if (response && response.ok) {
+      showLicenseManagementModal(response.data, licenseKey.trim());
+    } else {
+      throw new Error(response?.error || 'Failed to load license information');
+    }
+  } catch (error) {
+    console.error('License management failed:', error);
+    showLicenseMessage('Failed to load license information. Please check your license key.', 'error');
+  }
+}
+
+// Show license management modal
+function showLicenseManagementModal(licenseData, licenseKey) {
+  // Remove existing modal if present
+  const existingModal = document.getElementById('license-management-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const { license, devices, stats } = licenseData;
+  
+  // Format dates
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString();
+  };
+  
+  // Generate device list HTML
+  const deviceListHTML = devices.map(device => `
+    <div class="device-item ${device.status === 'active' ? 'active' : 'inactive'}">
+      <div class="device-info">
+        <div class="device-id">
+          <strong>Device ID:</strong> ${device.deviceId}
+        </div>
+        <div class="device-agent">
+          <strong>Browser:</strong> ${device.userAgent}
+        </div>
+        <div class="device-activated">
+          <strong>Activated:</strong> ${formatDate(device.activatedAt)}
+        </div>
+        ${device.status === 'inactive' ? `
+          <div class="device-deactivated">
+            <strong>Deactivated:</strong> ${formatDate(device.deactivatedAt)}
+          </div>
+        ` : ''}
+      </div>
+      ${device.status === 'active' ? `
+        <div class="device-actions">
+          <button class="btn-danger device-deactivate-btn" data-device-id="${device.deviceId}">
+            Deactivate
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+  
+  const modalHTML = `
+    <div id="license-management-modal" class="upgrade-modal" style="display: flex; z-index: 10000;">
+      <div class="upgrade-modal__content" style="max-width: 700px; width: 90vw;">
+        <button class="modal-close" id="license-modal-close">&times;</button>
+        
+        <h3>License Management</h3>
+        
+        <div class="license-overview">
+          <div class="license-detail">
+            <strong>License:</strong> ${license.code}
+          </div>
+          <div class="license-detail">
+            <strong>Plan:</strong> ${license.plan.toUpperCase()}
+          </div>
+          <div class="license-detail">
+            <strong>Email:</strong> ${license.email || 'N/A'}
+          </div>
+          <div class="license-detail">
+            <strong>Status:</strong> <span class="status-${license.status}">${license.status.toUpperCase()}</span>
+          </div>
+          <div class="license-detail">
+            <strong>Expires:</strong> ${formatDate(license.expiresAt)}
+          </div>
+        </div>
+        
+        <div class="device-stats">
+          <div class="stat-item">
+            <span class="stat-number">${stats.activeDevices}</span>
+            <span class="stat-label">Active Devices</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${stats.availableSlots}</span>
+            <span class="stat-label">Available Slots</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${license.maxDevices}</span>
+            <span class="stat-label">Total Slots</span>
+          </div>
+        </div>
+        
+        <h4>Device List</h4>
+        <div class="device-list">
+          ${deviceListHTML || '<p>No devices found.</p>'}
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-secondary" id="license-refresh-btn">Refresh</button>
+          <button class="btn-primary" id="license-modal-ok">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to document
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Get modal elements
+  const modal = document.getElementById('license-management-modal');
+  const closeBtn = document.getElementById('license-modal-close');
+  const okBtn = document.getElementById('license-modal-ok');
+  const refreshBtn = document.getElementById('license-refresh-btn');
+  const deactivateBtns = modal.querySelectorAll('.device-deactivate-btn');
+  
+  // Set up event listeners
+  const closeModal = () => {
+    modal.remove();
+    showLicenseMessage('', 'info'); // Clear message
+  };
+  
+  closeBtn?.addEventListener('click', closeModal);
+  okBtn?.addEventListener('click', closeModal);
+  
+  refreshBtn?.addEventListener('click', async () => {
+    modal.remove();
+    await handleManageLicense();
+  });
+  
+  // Set up deactivate buttons
+  deactivateBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const deviceId = btn.dataset.deviceId;
+      if (confirm('Are you sure you want to deactivate this device? This action cannot be undone.')) {
+        try {
+          btn.textContent = 'Deactivating...';
+          btn.disabled = true;
+          
+          const response = await chrome.runtime.sendMessage({
+            action: 'license:deactivateDevice',
+            licenseKey: licenseKey,
+            deviceId: deviceId
+          });
+          
+          if (response && response.ok) {
+            // Refresh the modal
+            modal.remove();
+            await handleManageLicense();
+          } else {
+            throw new Error(response?.error || 'Failed to deactivate device');
+          }
+        } catch (error) {
+          console.error('Device deactivation failed:', error);
+          btn.textContent = 'Deactivate';
+          btn.disabled = false;
+          alert('Failed to deactivate device: ' + error.message);
+        }
+      }
+    });
+  });
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+}
+
+// Handle history license activation
+async function handleHistoryLicenseActivation() {
+  const licenseKey = historyLicenseInput?.value?.trim();
+  
+  if (!licenseKey) {
+    alert('Please enter a license key');
+    return;
+  }
+  
+  try {
+    // Show loading state
+    if (historyActivateLicense) {
+      historyActivateLicense.textContent = 'Activating...';
+      historyActivateLicense.disabled = true;
+    }
+    
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+    
+    if (response && response.ok) {
+      alert('License activated successfully!');
+      historyLicenseInput.value = '';
+      updateLicenseUI();
+    } else {
+      throw new Error(response?.error || 'Activation failed');
+    }
+    
+  } catch (error) {
+    console.error('History license activation failed:', error);
+    alert(error.message);
+  } finally {
+    // Reset button state
+    if (historyActivateLicense) {
+      historyActivateLicense.textContent = 'Activate';
+      historyActivateLicense.disabled = false;
+    }
+  }
+}
+
+// Update history overlay based on license state
+async function updateHistoryOverlay(license) {
+  if (!historyOverlay) return;
+  
+  const historyList = document.getElementById('historyList');
+  
+  try {
+    if (license.plan === 'free') {
+      // Show overlay for free users
+      if (historyList) {
+        historyList.classList.add('ap-blur');
+      }
+      
+      if (historyOverlayTitle) {
+        historyOverlayTitle.textContent = 'History Records is a Pro feature';
+      }
+      
+      if (historyOverlayDescription) {
+        historyOverlayDescription.textContent = 'Unlock encrypted Shadow Vault to view and restore records.';
+      }
+      
+      historyOverlay.style.display = 'flex';
+      
+    } else {
+      // Check if password/vault is locked for Pro users
+      const isVaultUnlocked = await checkVaultStatus();
+      
+      if (!isVaultUnlocked && (license.plan === 'pro' || license.plan === 'pro_trial')) {
+        // Show unlock prompt for Pro users with locked vault
+        if (historyList) {
+          historyList.classList.add('ap-blur');
+        }
+        
+        if (historyOverlayTitle) {
+          historyOverlayTitle.textContent = 'Vault is locked';
+        }
+        
+        if (historyOverlayDescription) {
+          historyOverlayDescription.innerHTML = `
+            <button class="btn btn-primary" onclick="unlockVault()">
+              🔓 Unlock Vault
+            </button>
+          `;
+        }
+        
+        // Hide Coinbase/License form for locked vault
+        const licenseForm = historyOverlay.querySelector('.ap-license-form');
+        const coinbaseBtn = historyOverlay.querySelector('.btn-coinbase');
+        if (licenseForm) licenseForm.style.display = 'none';
+        if (coinbaseBtn) coinbaseBtn.style.display = 'none';
+        
+        historyOverlay.style.display = 'flex';
+        
+      } else {
+        // Hide overlay for unlocked Pro users
+        if (historyList) {
+          historyList.classList.remove('ap-blur');
+        }
+        
+        historyOverlay.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update history overlay:', error);
+    
+    // On error, assume free plan behavior
+    if (historyList) {
+      historyList.classList.add('ap-blur');
+    }
+    historyOverlay.style.display = 'flex';
+  }
+}
+
+// Check vault/password status
+async function checkVaultStatus() {
+  try {
+    // Check if password protection is enabled and vault is unlocked
+    const stored = await chrome.storage.local.get(['passwordProtectionEnabled', 'vaultUnlocked']);
+    
+    if (!stored.passwordProtectionEnabled) {
+      // No password protection, vault is "unlocked"
+      return true;
+    }
+    
+    // Check if vault is currently unlocked
+    return stored.vaultUnlocked === true;
+  } catch (error) {
+    console.error('Failed to check vault status:', error);
+    return false;
+  }
+}
+
+// Unlock vault function (placeholder)
+function unlockVault() {
+  // This would typically show the password modal
+  // For now, just show a message
+  alert('Vault unlock functionality will be implemented here');
+}
+
+// Show license message
+function showLicenseMessage(message, type = 'info') {
+  if (!licenseMessage) return;
+  
+  licenseMessage.className = `ap-alert ap-alert--${type}`;
+  licenseMessage.textContent = message;
+  licenseMessage.style.display = 'block';
+  
+  // Auto-hide success/info messages after 5 seconds
+  if (type === 'success' || type === 'info') {
+    setTimeout(() => {
+      if (licenseMessage) {
+        licenseMessage.style.display = 'none';
+      }
+    }, 5000);
+  }
+}
+
+// Utility function to normalize timestamps
+function toEpochMs(maybeNumberOrISO) {
+  if (typeof maybeNumberOrISO === "number") {
+    return maybeNumberOrISO < 1e12 ? maybeNumberOrISO * 1000 : maybeNumberOrISO;
+  }
+  if (typeof maybeNumberOrISO === "string") {
+    return Date.parse(maybeNumberOrISO);
+  }
+  return undefined;
+}
+
+// Show upgrade modal for Pro features
+function showUpgradeModal(title, description) {
+  // Remove existing modal if any
+  const existingModal = document.querySelector('.upgrade-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create modal HTML
+  const modalHTML = `
+    <div class="upgrade-modal" id="upgrade-modal">
+      <div class="upgrade-modal__content">
+        <h3>${title}</h3>
+        <p>${description}</p>
+        
+        <div class="upgrade-modal__buttons">
+          <button class="btn-coinbase" id="modal-buy-coinbase">
+            Buy with Coinbase
+          </button>
+          
+          <div class="upgrade-modal__license-form">
+            <input type="text" id="modal-license-input" placeholder="Enter license key" style="font-family: monospace;">
+            <button class="btn-license" id="modal-activate-license">
+              Activate
+            </button>
+          </div>
+          
+          <button class="btn btn-secondary" id="modal-close" style="margin-top: 16px;">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to document
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Get modal elements
+  const modal = document.getElementById('upgrade-modal');
+  const modalBuyCoinbase = document.getElementById('modal-buy-coinbase');
+  const modalLicenseInput = document.getElementById('modal-license-input');
+  const modalActivateLicense = document.getElementById('modal-activate-license');
+  const modalClose = document.getElementById('modal-close');
+  
+  // Set up event listeners
+  if (modalBuyCoinbase) {
+    modalBuyCoinbase.addEventListener('click', async () => {
+      try {
+        modalBuyCoinbase.textContent = 'Opening checkout...';
+        modalBuyCoinbase.disabled = true;
+        
+        const response = await chrome.runtime.sendMessage({
+          action: 'checkout:create',
+          provider: 'coinbase',
+          productCode: 'autopurge_pro_001'
+        });
+        
+        if (response && response.ok) {
+          if (response.tabError) {
+            // Tab creation failed, provide manual link
+            modal.innerHTML = `
+              <div class="upgrade-modal__content">
+                <h3>Checkout Created!</h3>
+                <p>If the Coinbase page didn't open automatically, click the button below:</p>
+                <a href="${response.hosted_url}" target="_blank" class="btn-coinbase" style="display: inline-block; text-decoration: none;">
+                  Open Coinbase Checkout
+                </a>
+                <p style="margin-top: 15px;">Complete your purchase and return here to activate your license.</p>
+                <button class="modal-close" onclick="this.closest('.upgrade-modal').remove()">Close</button>
+              </div>
+            `;
+          } else {
+            modal.remove();
+          }
+        } else {
+          throw new Error('Checkout failed');
+        }
+      } catch (error) {
+        console.error('Coinbase purchase failed:', error);
+        modalBuyCoinbase.textContent = 'Buy with Coinbase';
+        modalBuyCoinbase.disabled = false;
+        alert('Failed to create checkout. Please try again.');
+      }
+    });
+  }
+  
+  if (modalActivateLicense) {
+    modalActivateLicense.addEventListener('click', async () => {
+      const licenseKey = modalLicenseInput.value.trim();
+      if (!licenseKey) {
+        alert('Please enter a license key');
+        return;
+      }
+      
+      try {
+        modalActivateLicense.textContent = 'Activating...';
+        modalActivateLicense.disabled = true;
+        
+        const response = await chrome.runtime.sendMessage({
+          action: 'license:activate',
+          licenseKey: licenseKey
+        });
+        
+        if (response && response.ok) {
+          alert('License activated successfully!');
+          modal.remove();
+          updateLicenseUI();
+        } else {
+          throw new Error(response?.error || 'Activation failed');
+        }
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        modalActivateLicense.textContent = 'Activate';
+        modalActivateLicense.disabled = false;
+      }
+    });
+  }
+  
+  if (modalClose) {
+    modalClose.addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+  
+  // Close modal with Escape key
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', escapeHandler);
+    }
+  };
+  document.addEventListener('keydown', escapeHandler);
+}
 
 // 调试函数
 window.debugOptions = {

@@ -452,3 +452,554 @@ body {
   border-color: #d1d5db;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
+
+/* ======= LICENSE MANAGEMENT STYLES ======= */
+
+/* Blur overlay for Pro gating */
+.ap-blur-wrap {
+  position: relative;
+}
+
+.ap-blur {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.ap-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(2px);
+}
+
+.ap-overlay__panel {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  max-width: 560px;
+  width: 90%;
+  margin: 0 16px;
+}
+
+.ap-overlay__panel h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.ap-overlay__panel p {
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.ap-overlay__panel .ap-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.ap-overlay__panel .ap-license-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.ap-overlay__panel .ap-license-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+.ap-overlay__panel .ap-license-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Plan badges */
+.ap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.ap-badge--pro {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.ap-badge--trial {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.ap-badge--free {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+/* Button variants for license management */
+.btn-coinbase {
+  background: linear-gradient(135deg, #1652f0 0%, #0052ff 100%);
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.btn-coinbase:hover {
+  background: linear-gradient(135deg, #0041d0 0%, #0037cc 100%);
+  transform: translateY(-1px);
+}
+
+.btn-paypal {
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  cursor: not-allowed;
+  font-size: 14px;
+  min-width: 140px;
+  position: relative;
+}
+
+.btn-paypal::after {
+  content: "Coming soon";
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.btn-license {
+  background: #10b981;
+  color: white;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.btn-license:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Payment method tiles for subscription page */
+.payment-tile {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-tile:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.payment-tile.enabled {
+  cursor: pointer;
+}
+
+.payment-tile.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.payment-tile.disabled:hover {
+  transform: none;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.payment-tile h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.payment-tile p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Upgrade modal styles */
+.upgrade-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.upgrade-modal__content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.upgrade-modal__content h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.upgrade-modal__content p {
+  color: #6b7280;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.upgrade-modal__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.upgrade-modal__license-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.upgrade-modal__license-form input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.upgrade-modal__license-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Loading states */
+.ap-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.ap-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Alert styles for license messages */
+.ap-alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+}
+
+.ap-alert--success {
+  background: #d1fae5;
+  color: #065f46;
+  border-left-color: #10b981;
+}
+
+.ap-alert--error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left-color: #ef4444;
+}
+
+.ap-alert--warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-left-color: #f59e0b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .ap-overlay__panel {
+    padding: 24px;
+    margin: 0 8px;
+  }
+  
+  .ap-overlay__panel .ap-buttons {
+    width: 100%;
+  }
+  
+  .upgrade-modal__content {
+    padding: 24px;
+    margin: 0 8px;
+  }
+  
+  .upgrade-modal__buttons {
+    width: 100%;
+  }
+  
+  .btn-coinbase,
+  .btn-paypal {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* License Management Modal Styles */
+#license-management-modal .upgrade-modal__content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.license-overview {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.license-detail {
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.license-detail strong {
+  color: #374151;
+  min-width: 80px;
+}
+
+.status-active {
+  color: #059669;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-inactive {
+  color: #dc2626;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.device-stats {
+  display: flex;
+  gap: 16px;
+  margin: 20px 0;
+  justify-content: space-around;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.device-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 16px 0;
+}
+
+.device-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.device-item.active {
+  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+}
+
+.device-item.inactive {
+  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  opacity: 0.7;
+}
+
+.device-info {
+  flex: 1;
+}
+
+.device-id,
+.device-agent,
+.device-activated,
+.device-deactivated {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.device-id strong,
+.device-agent strong,
+.device-activated strong,
+.device-deactivated strong {
+  color: #374151;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.device-actions {
+  margin-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-danger:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-primary {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #4338ca;
+}

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoPurge Popup Demo</title>
+  <link rel="stylesheet" href="extension/styles.css">
+  <style>
+    body {
+      background: #f0f0f0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .demo-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .demo-header h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    
+    .demo-header p {
+      color: #7f8c8d;
+      font-size: 16px;
+    }
+    
+    .popup-demo {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    
+    .popup-wrapper {
+      position: relative;
+      transform: scale(1);
+      transition: transform 0.3s ease;
+    }
+    
+    .popup-wrapper:hover {
+      transform: scale(1.02);
+    }
+    
+    .popup-label {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .features-list {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+    }
+    
+    .features-list h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .feature-item:last-child {
+      border-bottom: none;
+    }
+    
+    .feature-icon {
+      font-size: 20px;
+      margin-right: 12px;
+      width: 30px;
+      text-align: center;
+    }
+    
+    .feature-text {
+      flex: 1;
+    }
+    
+    .feature-title {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 4px;
+    }
+    
+    .feature-desc {
+      font-size: 14px;
+      color: #7f8c8d;
+    }
+    
+    .demo-notes {
+      background: #e3f2fd;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+      border-left: 4px solid #2196f3;
+    }
+    
+    .demo-notes h4 {
+      color: #1976d2;
+      margin-bottom: 10px;
+    }
+    
+    .demo-notes ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .demo-notes li {
+      margin-bottom: 8px;
+      color: #1565c0;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>AutoPurge Popup 界面展示</h1>
+      <p>Chrome 扩展的弹窗界面，提供隐私保护功能的核心控制面板</p>
+    </div>
+    
+    <div class="popup-demo">
+      <!-- Popup 界面展示 -->
+      <div>
+        <div class="popup-label">Popup 界面</div>
+        <div class="popup-wrapper">
+          <div class="popup-container">
+            <!-- Header -->
+            <div class="header">
+              <div class="logo">
+                <img src="extension/icon.png" alt="AutoPurge" class="logo-icon">
+                <h1>AutoPurge</h1>
+              </div>
+              <div class="status-badge">
+                <span class="status-dot"></span>
+                <span class="status-text">Active</span>
+              </div>
+            </div>
+
+            <!-- Current Site Status -->
+            <div class="section current-site-section">
+              <h3>Current Site</h3>
+              <div class="site-info">
+                <div class="site-icon">🔞</div>
+                <div class="site-details">
+                  <div class="site-name">example.com</div>
+                  <div class="site-status">History will be cleared immediately</div>
+                  <!-- 倒计时显示 -->
+                  <div class="countdown" style="display: none;">
+                    <span class="countdown-label">History will be cleared in:</span>
+                    <span class="countdown-time">10s</span>
+                    <span class="countdown-unit">seconds</span>
+                  </div>
+                  <!-- 删除完成状态 -->
+                  <div class="removal-status" style="display: none;">
+                    <span class="removal-icon">✅</span>
+                    <span class="removal-text">Removed</span>
+                  </div>
+                </div>
+                <div class="detection-badge">
+                  <span class="badge-icon">●</span>
+                  <span class="badge-text">Detected</span>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-small">Refresh</button>
+              <button class="btn btn-secondary btn-small" style="margin-left: 8px;">Reset</button>
+              <button class="btn btn-secondary btn-small" style="margin-left: 8px;">Test Debug</button>
+            </div>
+
+            <!-- Monitoring Status -->
+            <div class="section monitoring-section">
+              <h3>Active Monitoring</h3>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-value">30</div>
+                  <div class="stat-label">Domains</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">5</div>
+                  <div class="stat-label">Today</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">127</div>
+                  <div class="stat-label">Total</div>
+                </div>
+              </div>
+              <div class="config-info">
+                <div class="config-item">
+                  <span class="config-label">Deletion Delay:</span>
+                  <span class="config-value">10s</span>
+                </div>
+                <div class="config-item">
+                  <span class="config-label">Queue Size:</span>
+                  <span class="config-value">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section actions-section">
+              <h3>Quick Actions</h3>
+              <div class="action-buttons">
+                <button class="btn btn-primary">Disable</button>
+                <button class="btn btn-secondary">Clear Recent</button>
+                <button class="btn btn-secondary">Settings</button>
+              </div>
+            </div>
+
+            <!-- Pro Features (if available) -->
+            <div class="section pro-section" style="display: none;">
+              <h3>Pro Features</h3>
+              <div class="pro-features">
+                <div class="pro-feature">
+                  <span class="feature-icon">🔒</span>
+                  <span class="feature-text">Shadow History</span>
+                </div>
+                <div class="pro-feature">
+                  <span class="feature-icon">📊</span>
+                  <span class="feature-text">Advanced Analytics</span>
+                </div>
+                <div class="pro-feature">
+                  <span class="feature-icon">⚡</span>
+                  <span class="feature-text">Priority Support</span>
+                </div>
+              </div>
+              <button class="btn btn-pro">Upgrade to Pro</button>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <div class="footer-links">
+                <a href="#">Help</a>
+                <a href="#">Feedback</a>
+                <a href="#">Privacy</a>
+              </div>
+              <div class="version">v1.0.0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 功能特性说明 -->
+      <div class="features-list">
+        <h3>主要功能特性</h3>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🌐</div>
+          <div class="feature-text">
+            <div class="feature-title">实时网站检测</div>
+            <div class="feature-desc">自动识别当前访问的网站，检测是否在监控列表中</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⏱️</div>
+          <div class="feature-text">
+            <div class="feature-title">倒计时删除</div>
+            <div class="feature-desc">检测到敏感网站时，显示倒计时并自动清除浏览历史</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <div class="feature-title">统计信息</div>
+            <div class="feature-desc">显示监控域名数量、今日删除次数、总删除次数等统计</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⚙️</div>
+          <div class="feature-text">
+            <div class="feature-title">快速操作</div>
+            <div class="feature-desc">一键启用/禁用、清除最近历史、打开设置页面</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-text">
+            <div class="feature-title">隐私保护</div>
+            <div class="feature-desc">自动清除敏感网站的浏览记录，保护用户隐私</div>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">💎</div>
+          <div class="feature-text">
+            <div class="feature-title">Pro 功能</div>
+            <div class="feature-desc">高级功能包括影子历史、详细分析、优先支持等</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="demo-notes">
+      <h4>界面说明</h4>
+      <ul>
+        <li><strong>Header 区域：</strong>显示扩展名称、图标和当前状态（激活/未激活）</li>
+        <li><strong>Current Site 区域：</strong>显示当前网站信息，包括检测状态和倒计时</li>
+        <li><strong>Monitoring 区域：</strong>显示统计信息，包括监控域名数量和删除次数</li>
+        <li><strong>Quick Actions 区域：</strong>提供快速操作按钮，如启用/禁用、清除历史等</li>
+        <li><strong>Pro Features 区域：</strong>显示高级功能（需要 Pro 订阅）</li>
+        <li><strong>Footer 区域：</strong>包含帮助链接和版本信息</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

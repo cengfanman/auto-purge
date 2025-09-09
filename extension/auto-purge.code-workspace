@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../uu-backend-nodejs"
+		},
+		{
+			"path": "../../finchat-backend/main/services/push-service"
+		}
+	],
+	"settings": {}
+}

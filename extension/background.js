@@ -17,6 +17,12 @@ const DEFAULT_CONFIG = {
   usage: { deletionsToday: 0, deletionsTotal: 0 }
 };
 
+// API Base URL
+const API_BASE_URL = 'https://api.autopurge.shop';
+
+// License verification interval (24 hours)
+const LICENSE_VERIFY_INTERVAL = 24 * 60 * 60 * 1000;
+
 // Enhanced deletion pipeline with debouncing and retry logic
 const deletionQueue = new Map(); // Map<url, {timeoutId, retryCount, timestamp}>
 const errorStats = { deleteErrors: 0, retryErrors: 0 };
@@ -46,6 +52,12 @@ async function initializeExtension() {
   if (config.plan === 'pro') {
     await initializeProFeatures();
   }
+  
+  // Initialize device fingerprint if not exists
+  await initializeDeviceFingerprint();
+  
+  // Start license verification timer
+  await startLicenseVerificationTimer();
   
   console.log('AutoPurge extension initialized successfully');
 }
@@ -360,6 +372,89 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse(config);
       break;
       
+    // ======= LICENSE MANAGEMENT MESSAGES =======
+    case 'license:getState':
+      (async () => {
+        try {
+          const stored = await chrome.storage.local.get(['license']);
+          sendResponse(stored.license || { plan: 'free' });
+        } catch (error) {
+          console.error('Failed to get license state:', error);
+          sendResponse({ plan: 'free' });
+        }
+      })();
+      return true;
+      
+    case 'license:activate':
+      (async () => {
+        try {
+          const result = await activateLicense(message.licenseKey);
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
+    case 'license:verify':
+      (async () => {
+        try {
+          const result = await verifyLicenseToken();
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
+    case 'license:clear':
+      (async () => {
+        try {
+          const result = await clearLicense();
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
+    case 'license:manage':
+      (async () => {
+        try {
+          const result = await getLicenseManagement(message.licenseKey);
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
+    case 'license:deactivateDevice':
+      (async () => {
+        try {
+          const result = await deactivateDevice(message.licenseKey, message.deviceId);
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
+    case 'checkout:create':
+      (async () => {
+        try {
+          const result = await createCheckout(
+            message.provider,
+            message.productCode,
+            message.email
+          );
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
     case 'updateConfig':
       (async () => {
         config = { ...config, ...message.config };
@@ -668,6 +763,239 @@ async function recordHistoryDeletion(url, title, domain) {
   }
 }
 
+// ============ LICENSE MANAGEMENT FUNCTIONS ============
+
+// Initialize device fingerprint
+async function initializeDeviceFingerprint() {
+  try {
+    const stored = await chrome.storage.local.get(['device']);
+    if (!stored.device || !stored.device.fingerprint) {
+      // Generate UUID v4 using crypto.getRandomValues
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      
+      // Set version (4) and variant bits
+      array[6] = (array[6] & 0x0f) | 0x40;
+      array[8] = (array[8] & 0x3f) | 0x80;
+      
+      // Convert to UUID string format
+      const fingerprint = Array.from(array, (byte, i) => {
+        const hex = byte.toString(16).padStart(2, '0');
+        if (i === 4 || i === 6 || i === 8 || i === 10) return '-' + hex;
+        return hex;
+      }).join('');
+      
+      await chrome.storage.local.set({ device: { fingerprint } });
+      console.log('Device fingerprint generated:', fingerprint);
+    }
+  } catch (error) {
+    console.error('Failed to initialize device fingerprint:', error);
+  }
+}
+
+// Start license verification timer
+async function startLicenseVerificationTimer() {
+  // Verify license on startup
+  await verifyLicenseToken();
+  
+  // Set up periodic verification
+  setInterval(async () => {
+    await verifyLicenseToken();
+  }, LICENSE_VERIFY_INTERVAL);
+}
+
+// Activate license
+async function activateLicense(licenseKey) {
+  try {
+    const device = await chrome.storage.local.get(['device']);
+    if (!device.device || !device.device.fingerprint) {
+      throw new Error('Device fingerprint not initialized');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/licenses/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        licenseKey,
+        deviceFingerprint: device.device.fingerprint,
+        userAgent: navigator.userAgent
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Activation failed');
+    }
+    
+    // Normalize response data
+    const expiresAtMs = result.data.exp || Date.parse(result.data.expiresAt);
+    
+    // Save license data
+    const license = {
+      plan: result.data.plan,
+      token: result.data.token,
+      expiresAt: expiresAtMs,
+      exp: expiresAtMs,
+      deviceId: result.data.deviceId,
+      licCodeMasked: result.data.licCodeMasked,
+      provider: 'coinbase'
+    };
+    
+    await chrome.storage.local.set({ license });
+    config.plan = result.data.plan;
+    
+    // Broadcast license change
+    chrome.runtime.sendMessage({ type: 'license:changed' }).catch(() => {});
+    
+    console.log('License activated successfully');
+    return { ok: true };
+    
+  } catch (error) {
+    console.error('License activation failed:', error);
+    
+    // Map API errors to user-friendly messages
+    if (error.message.includes('INVALID') || error.message.includes('Invalid license key')) {
+      throw new Error('Invalid license key');
+    } else if (error.message.includes('EXPIRED') || error.message.includes('expired')) {
+      throw new Error('Expired license');
+    } else if (error.message.includes('REVOKED') || error.message.includes('revoked')) {
+      throw new Error('License revoked');
+    } else if (error.message.includes('DEVICE_LIMIT') || error.message.includes('Device limit reached')) {
+      throw new Error('Device limit reached');
+    }
+    
+    throw new Error('Activation failed, please retry');
+  }
+}
+
+// Verify license token
+async function verifyLicenseToken() {
+  try {
+    const stored = await chrome.storage.local.get(['license']);
+    if (!stored.license || !stored.license.token) {
+      return { ok: false, plan: 'free' };
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/licenses/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: stored.license.token })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok && result.success && result.data.valid === true) {
+      // Update license data
+      const license = {
+        ...stored.license,
+        plan: result.data.plan,
+        grace: result.data.grace,
+        expiresAt: Date.parse(result.data.expiresAt)
+      };
+      
+      await chrome.storage.local.set({ license });
+      config.plan = result.data.plan;
+      
+      // Broadcast license change
+      chrome.runtime.sendMessage({ type: 'license:changed' }).catch(() => {});
+      
+      return { ok: true, plan: result.data.plan };
+    } else {
+      // License is invalid, downgrade to free but keep some data for UI
+      const license = {
+        plan: 'free',
+        licCodeMasked: stored.license.licCodeMasked
+      };
+      
+      await chrome.storage.local.set({ license });
+      config.plan = 'free';
+      
+      // Broadcast license change
+      chrome.runtime.sendMessage({ type: 'license:changed' }).catch(() => {});
+      
+      return { ok: false, plan: 'free' };
+    }
+    
+  } catch (error) {
+    console.error('License verification failed:', error);
+    
+    // On network error, keep current license status
+    const stored = await chrome.storage.local.get(['license']);
+    return { 
+      ok: false, 
+      plan: stored.license?.plan || 'free' 
+    };
+  }
+}
+
+// Clear license
+async function clearLicense() {
+  try {
+    await chrome.storage.local.set({ 
+      license: { plan: 'free' } 
+    });
+    config.plan = 'free';
+    
+    // Broadcast license change
+    chrome.runtime.sendMessage({ type: 'license:changed' }).catch(() => {});
+    
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to clear license:', error);
+    throw error;
+  }
+}
+
+// Create checkout session
+async function createCheckout(provider, productCode, email) {
+  try {
+    console.log('Creating checkout:', { provider, productCode, email });
+    
+    const response = await fetch(`${API_BASE_URL}/checkout/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, productCode, email })
+    });
+    
+    const result = await response.json();
+    console.log('Checkout API response:', result);
+    
+    if (!response.ok || !result.success || !result.data || !result.data.hosted_url) {
+      throw new Error('Checkout creation failed');
+    }
+    
+    console.log('Opening Coinbase URL in new tab:', result.data.hosted_url);
+    
+    // Open checkout URL in new tab
+    try {
+      const newTab = await chrome.tabs.create({ url: result.data.hosted_url });
+      console.log('New tab created successfully:', newTab.id);
+    } catch (tabError) {
+      console.error('Failed to create new tab:', tabError);
+      // Tab creation failed, but we still return success with the URL
+      // The options page can handle this as a fallback
+      return { ok: true, hosted_url: result.data.hosted_url, tabError: tabError.message };
+    }
+    
+    return { ok: true, hosted_url: result.data.hosted_url };
+  } catch (error) {
+    console.error('Checkout creation failed:', error);
+    throw error;
+  }
+}
+
+// Normalize timestamp to epoch milliseconds
+function toEpochMs(maybeNumberOrISO) {
+  if (typeof maybeNumberOrISO === "number") {
+    return maybeNumberOrISO < 1e12 ? maybeNumberOrISO * 1000 : maybeNumberOrISO;
+  }
+  if (typeof maybeNumberOrISO === "string") {
+    return Date.parse(maybeNumberOrISO);
+  }
+  return undefined;
+}
+
 // Reload configuration when storage changes
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
   if (namespace === 'local') {
@@ -787,5 +1115,48 @@ function getRuleIdForUrl(url) {
     return 'unknown';
   } catch (error) {
     return 'unknown';
+  }
+}
+
+// Get license management information
+async function getLicenseManagement(licenseKey) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/licenses/manage?licenseKey=${encodeURIComponent(licenseKey)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Failed to get license management info');
+    }
+    
+    return { ok: true, data: result.data };
+  } catch (error) {
+    console.error('License management failed:', error);
+    throw error;
+  }
+}
+
+// Deactivate a device from license
+async function deactivateDevice(licenseKey, deviceId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/licenses/deactivate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey, deviceId })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Failed to deactivate device');
+    }
+    
+    return { ok: true, data: result.data };
+  } catch (error) {
+    console.error('Device deactivation failed:', error);
+    throw error;
   }
 }
