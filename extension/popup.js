@@ -30,6 +30,18 @@ const feedbackLink = document.getElementById('feedbackLink');
 const privacyLink = document.getElementById('privacyLink');
 const planBadge = document.getElementById('plan-badge');
 
+// License management elements
+const licenseStatus = document.getElementById('licenseStatus');
+const licenseInfo = document.getElementById('licenseInfo');
+const licenseActivation = document.getElementById('licenseActivation');
+const licenseKeyInput = document.getElementById('licenseKeyInput');
+const activateLicenseBtn = document.getElementById('activateLicenseBtn');
+const licenseError = document.getElementById('licenseError');
+const licenseSuccess = document.getElementById('licenseSuccess');
+const licenseActions = document.getElementById('licenseActions');
+const manageLicenseBtn = document.getElementById('manageLicenseBtn');
+const deactivateLicenseBtn = document.getElementById('deactivateLicenseBtn');
+
 // Current configuration
 let config = {};
 
@@ -43,16 +55,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup initialized');
   await loadData();
   await updatePlanBadge();
+  await updateLicenseStatus();
   setupEventListeners();
   updateUI();
-  
+
   // Listen for license changes
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'license:changed') {
+    if (message.type === 'license:activated' || message.type === 'license:changed' || message.type === 'license:deactivated') {
       updatePlanBadge();
+      updateLicenseStatus();
     }
   });
-  
+
   // Refresh data periodically while popup is open
   setInterval(refreshStats, 3000);
 });
@@ -432,19 +446,31 @@ async function refreshStats() {
 function setupEventListeners() {
   // Refresh site button
   refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
-  
+
   // Toggle extension
   toggleBtn.addEventListener('click', toggleExtension);
-  
+
   // Clear recent history
   clearHistoryBtn.addEventListener('click', clearRecentHistory);
-  
+
   // Settings button
   settingsBtn.addEventListener('click', openSettings);
-  
+
   // Upgrade button
   upgradeBtn.addEventListener('click', openUpgrade);
-  
+
+  // License management
+  activateLicenseBtn.addEventListener('click', activateLicense);
+  deactivateLicenseBtn.addEventListener('click', deactivateLicense);
+  manageLicenseBtn.addEventListener('click', manageLicense);
+
+  // License key input
+  licenseKeyInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      activateLicense();
+    }
+  });
+
   // Footer links
   helpLink.addEventListener('click', openHelp);
   feedbackLink.addEventListener('click', openFeedback);
@@ -651,6 +677,161 @@ async function updatePlanBadge() {
     planBadge.className = 'ap-badge ap-badge--free';
     planBadge.textContent = 'Free';
   }
+}
+
+// License Management Functions
+
+async function updateLicenseStatus() {
+  try {
+    const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+
+    if (licenseState && licenseState.hasLicense && licenseState.licenseData) {
+      // Has active license
+      const licenseData = licenseState.licenseData;
+      const expiresAt = new Date(licenseData.expiresAt);
+
+      licenseInfo.innerHTML = `
+        <span class="license-text">License active until ${expiresAt.toLocaleDateString()}</span>
+      `;
+
+      // Show license management buttons, hide activation form
+      licenseActivation.style.display = 'none';
+      licenseActions.style.display = 'flex';
+      upgradeBtn.style.display = 'none';
+
+      proSection.setAttribute('data-has-license', 'true');
+    } else {
+      // No license
+      licenseInfo.innerHTML = `
+        <span class="license-text">No active license</span>
+      `;
+
+      // Show activation form, hide license management buttons
+      licenseActivation.style.display = 'block';
+      licenseActions.style.display = 'none';
+      upgradeBtn.style.display = 'block';
+
+      proSection.setAttribute('data-has-license', 'false');
+    }
+  } catch (error) {
+    console.error('Failed to update license status:', error);
+    licenseInfo.innerHTML = `
+      <span class="license-text">Error loading license status</span>
+    `;
+  }
+}
+
+async function activateLicense() {
+  const licenseKey = licenseKeyInput.value.trim();
+
+  if (!licenseKey) {
+    showLicenseError('Please enter a license key');
+    return;
+  }
+
+  // Validate license key format
+  if (!/^AP-\d{4}-[A-Z0-9]{6}$/.test(licenseKey)) {
+    showLicenseError('Invalid license key format. Expected: AP-YYYY-XXXXXX');
+    return;
+  }
+
+  try {
+    activateLicenseBtn.disabled = true;
+    activateLicenseBtn.textContent = 'Activating...';
+    clearLicenseMessages();
+
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+
+    if (result.ok) {
+      showLicenseSuccess('License activated successfully!');
+      licenseKeyInput.value = '';
+
+      // Update status after a short delay
+      setTimeout(() => {
+        updateLicenseStatus();
+        updatePlanBadge();
+      }, 1000);
+    } else {
+      showLicenseError(result.error || 'License activation failed');
+    }
+  } catch (error) {
+    console.error('License activation error:', error);
+    showLicenseError('Failed to activate license. Please try again.');
+  } finally {
+    activateLicenseBtn.disabled = false;
+    activateLicenseBtn.textContent = 'Activate';
+  }
+}
+
+async function deactivateLicense() {
+  if (!confirm('Are you sure you want to deactivate this license? This will downgrade your account to free.')) {
+    return;
+  }
+
+  try {
+    deactivateLicenseBtn.disabled = true;
+    deactivateLicenseBtn.textContent = 'Deactivating...';
+
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:deactivate'
+    });
+
+    if (result.ok) {
+      // Update status
+      updateLicenseStatus();
+      updatePlanBadge();
+    } else {
+      alert('Failed to deactivate license: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('License deactivation error:', error);
+    alert('Failed to deactivate license. Please try again.');
+  } finally {
+    deactivateLicenseBtn.disabled = false;
+    deactivateLicenseBtn.textContent = 'Deactivate';
+  }
+}
+
+async function manageLicense() {
+  try {
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:info'
+    });
+
+    if (result.ok && result.data) {
+      const licenseData = result.data;
+      alert(`License Information:
+- Email: ${licenseData.license.email}
+- Plan: ${licenseData.license.plan}
+- Devices: ${licenseData.stats.activeDevices}/${licenseData.license.maxDevices}
+- Expires: ${new Date(licenseData.license.expiresAt).toLocaleDateString()}`);
+    } else {
+      alert('Failed to get license information');
+    }
+  } catch (error) {
+    console.error('License info error:', error);
+    alert('Failed to get license information');
+  }
+}
+
+function showLicenseError(message) {
+  licenseError.textContent = message;
+  licenseError.style.display = 'block';
+  licenseSuccess.style.display = 'none';
+}
+
+function showLicenseSuccess(message) {
+  licenseSuccess.textContent = message;
+  licenseSuccess.style.display = 'block';
+  licenseError.style.display = 'none';
+}
+
+function clearLicenseMessages() {
+  licenseError.style.display = 'none';
+  licenseSuccess.style.display = 'none';
 }
 
 // 全局测试函数

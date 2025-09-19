@@ -91,12 +91,42 @@
       </div>
     </div>
 
-    <!-- Pro Features (if available) -->
-    <div class="section pro-section" id="proSection" style="display: none;">
+    <!-- Pro Features and License Management -->
+    <div class="section pro-section" id="proSection">
       <h3>Pro Features</h3>
+
+      <!-- License Status -->
+      <div class="license-status" id="licenseStatus">
+        <div class="license-info" id="licenseInfo">
+          <span class="license-text">No active license</span>
+        </div>
+      </div>
+
+      <!-- License Activation -->
+      <div class="license-activation" id="licenseActivation">
+        <div class="input-group">
+          <input type="text"
+                 id="licenseKeyInput"
+                 placeholder="Enter license key (AP-2025-XXXXXX)"
+                 class="license-input">
+          <button class="btn btn-pro btn-small" id="activateLicenseBtn">Activate</button>
+        </div>
+        <div class="license-error" id="licenseError" style="display: none;"></div>
+        <div class="license-success" id="licenseSuccess" style="display: none;"></div>
+      </div>
+
+      <!-- Pro Features List -->
       <div class="pro-features">
         <div class="pro-feature">
+          <span class="feature-icon">🚫</span>
+          <span class="feature-text">Unlimited Domains</span>
+        </div>
+        <div class="pro-feature">
           <span class="feature-icon">🔒</span>
+          <span class="feature-text">PIN Protection</span>
+        </div>
+        <div class="pro-feature">
+          <span class="feature-icon">🔄</span>
           <span class="feature-text">Shadow History</span>
         </div>
         <div class="pro-feature">
@@ -108,7 +138,15 @@
           <span class="feature-text">Priority Support</span>
         </div>
       </div>
-      <button class="btn btn-pro" id="upgradeBtn">Upgrade to Pro</button>
+
+      <!-- Purchase button (shown when no license) -->
+      <button class="btn btn-pro" id="upgradeBtn">Get Pro License</button>
+
+      <!-- License management buttons (shown when license is active) -->
+      <div class="license-actions" id="licenseActions" style="display: none;">
+        <button class="btn btn-secondary btn-small" id="manageLicenseBtn">Manage License</button>
+        <button class="btn btn-danger btn-small" id="deactivateLicenseBtn">Deactivate</button>
+      </div>
     </div>
 
     <!-- Footer -->

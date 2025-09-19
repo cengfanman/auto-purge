@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge License Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online {
+            background: #28a745;
+        }
+
+        .status-indicator.offline {
+            background: #dc3545;
+        }
+
+        .status-indicator.unknown {
+            background: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 AutoPurge License Integration Test</h1>
+
+        <!-- Service Status -->
+        <div class="test-section">
+            <h3>Backend Service Status</h3>
+            <p id="serviceStatus">
+                <span class="status-indicator unknown"></span>
+                Checking service status...
+            </p>
+            <button class="btn btn-secondary" onclick="checkServiceStatus()">Refresh Status</button>
+        </div>
+
+        <!-- License Activation Test -->
+        <div class="test-section">
+            <h3>License Activation Test</h3>
+            <div class="input-group">
+                <input type="text"
+                       id="licenseKey"
+                       placeholder="Enter license key (e.g., AP-2025-1NBO59)"
+                       value="AP-2025-1NBO59">
+                <button class="btn btn-primary" onclick="testLicenseActivation()">Test Activation</button>
+            </div>
+            <div id="activationResult"></div>
+        </div>
+
+        <!-- License Verification Test -->
+        <div class="test-section">
+            <h3>License Verification Test</h3>
+            <button class="btn btn-primary" onclick="testLicenseVerification()">Test Verification</button>
+            <div id="verificationResult"></div>
+        </div>
+
+        <!-- License Info Test -->
+        <div class="test-section">
+            <h3>License Info Test</h3>
+            <button class="btn btn-primary" onclick="testLicenseInfo()">Get License Info</button>
+            <div id="infoResult"></div>
+        </div>
+
+        <!-- License Deactivation Test -->
+        <div class="test-section">
+            <h3>License Deactivation Test</h3>
+            <button class="btn btn-danger" onclick="testLicenseDeactivation()">Test Deactivation</button>
+            <div id="deactivationResult"></div>
+        </div>
+
+        <!-- Checkout Creation Test -->
+        <div class="test-section">
+            <h3>Checkout Creation Test</h3>
+            <div class="input-group">
+                <input type="email"
+                       id="checkoutEmail"
+                       placeholder="Enter email address"
+                       value="test@example.com">
+                <button class="btn btn-primary" onclick="testCheckoutCreation()">Test Checkout</button>
+            </div>
+            <div id="checkoutResult"></div>
+        </div>
+
+        <!-- Run All Tests -->
+        <div class="test-section">
+            <h3>Run All Tests</h3>
+            <button class="btn btn-primary" onclick="runAllTests()">Run All Tests</button>
+            <button class="btn btn-secondary" onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <!-- Console Log -->
+        <div class="log" id="console"></div>
+    </div>
+
+    <script>
+        // Test configuration
+        const API_BASE_URL = 'https://api.autopurge.shop';
+
+        // Console logging
+        const originalConsole = { ...console };
+        const logElement = document.getElementById('console');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = `[${timestamp}] ${message}`;
+            logElement.innerHTML += logLine + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+
+            if (type === 'error') {
+                originalConsole.error(message);
+            } else {
+                originalConsole.log(message);
+            }
+        }
+
+        function clearLog() {
+            logElement.innerHTML = '';
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        // Service status check
+        async function checkServiceStatus() {
+            try {
+                log('Checking backend service status...');
+                const response = await fetch(`${API_BASE_URL}/health`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('serviceStatus').innerHTML =
+                        '<span class="status-indicator online"></span>Service online - ' + data.timestamp;
+                    log('✅ Backend service is online');
+                } else {
+                    document.getElementById('serviceStatus').innerHTML =
+                        '<span class="status-indicator offline"></span>Service offline';
+                    log('❌ Backend service is offline');
+                }
+            } catch (error) {
+                document.getElementById('serviceStatus').innerHTML =
+                    '<span class="status-indicator offline"></span>Connection error';
+                log('❌ Failed to connect to backend service: ' + error.message, 'error');
+            }
+        }
+
+        // License activation test
+        async function testLicenseActivation() {
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+
+            if (!licenseKey) {
+                showResult('activationResult', 'Please enter a license key', 'error');
+                return;
+            }
+
+            try {
+                log(`Testing license activation with key: ${licenseKey}`);
+
+                const response = await fetch(`${API_BASE_URL}/licenses/activate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        licenseKey: licenseKey,
+                        deviceFingerprint: 'test-device-' + Date.now(),
+                        userAgent: navigator.userAgent,
+                        ip: '127.0.0.1'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showResult('activationResult',
+                        `✅ License activated successfully! Plan: ${result.data.plan || 'pro'}`,
+                        'success');
+                    log('✅ License activation successful');
+                } else {
+                    showResult('activationResult',
+                        `❌ License activation failed: ${result.error}`,
+                        'error');
+                    log('❌ License activation failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showResult('activationResult',
+                    `❌ Network error: ${error.message}`,
+                    'error');
+                log('❌ License activation error: ' + error.message, 'error');
+            }
+        }
+
+        // License verification test
+        async function testLicenseVerification() {
+            try {
+                log('Testing license verification...');
+
+                const response = await fetch(`${API_BASE_URL}/licenses/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: 'test-invalid-token'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showResult('verificationResult',
+                        `Verification result: Valid=${result.data.valid}`,
+                        result.data.valid ? 'success' : 'info');
+                    log(`✅ License verification completed. Valid: ${result.data.valid}`);
+                } else {
+                    showResult('verificationResult',
+                        `❌ Verification failed: ${result.error}`,
+                        'error');
+                    log('❌ License verification failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showResult('verificationResult',
+                    `❌ Network error: ${error.message}`,
+                    'error');
+                log('❌ License verification error: ' + error.message, 'error');
+            }
+        }
+
+        // License info test
+        async function testLicenseInfo() {
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+
+            if (!licenseKey) {
+                showResult('infoResult', 'Please enter a license key', 'error');
+                return;
+            }
+
+            try {
+                log(`Getting license info for: ${licenseKey}`);
+
+                const response = await fetch(`${API_BASE_URL}/licenses/manage?licenseKey=${encodeURIComponent(licenseKey)}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const license = result.data.license;
+                    const stats = result.data.stats;
+                    showResult('infoResult',
+                        `✅ License Info: Plan=${license.plan}, Devices=${stats.activeDevices}/${license.maxDevices}, Status=${license.status}`,
+                        'success');
+                    log('✅ License info retrieved successfully');
+                } else {
+                    showResult('infoResult',
+                        `❌ Failed to get license info: ${result.error}`,
+                        'error');
+                    log('❌ License info failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showResult('infoResult',
+                    `❌ Network error: ${error.message}`,
+                    'error');
+                log('❌ License info error: ' + error.message, 'error');
+            }
+        }
+
+        // License deactivation test
+        async function testLicenseDeactivation() {
+            const licenseKey = document.getElementById('licenseKey').value.trim();
+
+            if (!licenseKey) {
+                showResult('deactivationResult', 'Please enter a license key', 'error');
+                return;
+            }
+
+            try {
+                log(`Testing license deactivation for: ${licenseKey}`);
+
+                const response = await fetch(`${API_BASE_URL}/licenses/deactivate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        licenseKey: licenseKey,
+                        deviceId: 'test-device-123'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showResult('deactivationResult',
+                        `✅ License deactivated successfully`,
+                        'success');
+                    log('✅ License deactivation successful');
+                } else {
+                    showResult('deactivationResult',
+                        `❌ Deactivation failed: ${result.error}`,
+                        'error');
+                    log('❌ License deactivation failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showResult('deactivationResult',
+                    `❌ Network error: ${error.message}`,
+                    'error');
+                log('❌ License deactivation error: ' + error.message, 'error');
+            }
+        }
+
+        // Checkout creation test
+        async function testCheckoutCreation() {
+            const email = document.getElementById('checkoutEmail').value.trim();
+
+            if (!email) {
+                showResult('checkoutResult', 'Please enter an email address', 'error');
+                return;
+            }
+
+            try {
+                log(`Testing checkout creation for: ${email}`);
+
+                const response = await fetch(`${API_BASE_URL}/checkout/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productCode: 'autopurge_pro_001',
+                        email: email
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showResult('checkoutResult',
+                        `✅ Checkout created: ${result.data.hosted_url}`,
+                        'success');
+                    log('✅ Checkout creation successful');
+                } else {
+                    showResult('checkoutResult',
+                        `❌ Checkout creation failed: ${result.error}`,
+                        'error');
+                    log('❌ Checkout creation failed: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showResult('checkoutResult',
+                    `❌ Network error: ${error.message}`,
+                    'error');
+                log('❌ Checkout creation error: ' + error.message, 'error');
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            log('🚀 Starting comprehensive license integration tests...');
+            clearLog();
+
+            await checkServiceStatus();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await testLicenseActivation();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await testLicenseVerification();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await testLicenseInfo();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await testCheckoutCreation();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            log('✅ All tests completed!');
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            log('License integration test page loaded');
+            checkServiceStatus();
+        });
+    </script>
+</body>
+</html>
