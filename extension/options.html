@@ -609,6 +609,51 @@
       opacity: 0.6;
     }
 
+    /* Billing Cycle Toggle */
+    .billing-toggle {
+      display: inline-flex;
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .billing-toggle-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: transparent;
+      color: #6b7280;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .billing-toggle-btn:hover {
+      color: #374151;
+    }
+
+    .billing-toggle-btn--active {
+      background: white;
+      color: #1652f0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .save-badge {
+      background: #dcfce7;
+      color: #16a34a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
     .btn-license {
       background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
       color: white;
@@ -1018,11 +1063,25 @@
           <!-- Pro Plan Purchase -->
           <div class="section-card">
             <h3><i>⭐</i>AutoPurge Pro</h3>
-            <div style="text-align: center; margin: 20px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #2c3e50;">
-                $29.99<span style="font-size: 16px;">/year</span>
+
+            <!-- Billing Cycle Toggle -->
+            <div style="display: flex; justify-content: center; margin: 20px 0;">
+              <div class="billing-toggle" role="group">
+                <button id="monthly-plan-btn" class="billing-toggle-btn" data-cycle="monthly">
+                  Monthly
+                </button>
+                <button id="yearly-plan-btn" class="billing-toggle-btn billing-toggle-btn--active" data-cycle="yearly">
+                  Yearly
+                  <span class="save-badge">Save 18%</span>
+                </button>
               </div>
-              <p style="color: #7f8c8d; margin-bottom: 20px;">Unlock all premium features</p>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+              <div id="plan-price" style="font-size: 32px; font-weight: bold; color: #2c3e50;">
+                $49<span style="font-size: 16px;">/year</span>
+              </div>
+              <p id="plan-description" style="color: #7f8c8d; margin-bottom: 20px;">Unlock all premium features</p>
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0;">

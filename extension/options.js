@@ -2670,6 +2670,13 @@ let activateLicenseBtn = null;
 let pasteLicenseBtn = null;
 let licenseMessage = null;
 
+// Billing cycle elements
+let monthlyPlanBtn = null;
+let yearlyPlanBtn = null;
+let planPrice = null;
+let planDescription = null;
+let selectedBillingCycle = 'yearly'; // Default to yearly
+
 // History overlay elements
 let historyOverlay = null;
 let historyOverlayTitle = null;
@@ -2694,7 +2701,13 @@ function initializeLicenseManagement() {
   activateLicenseBtn = document.getElementById('activate-license-btn');
   pasteLicenseBtn = document.getElementById('paste-license-btn');
   licenseMessage = document.getElementById('license-message');
-  
+
+  // Get billing cycle elements
+  monthlyPlanBtn = document.getElementById('monthly-plan-btn');
+  yearlyPlanBtn = document.getElementById('yearly-plan-btn');
+  planPrice = document.getElementById('plan-price');
+  planDescription = document.getElementById('plan-description');
+
   // Get history overlay elements
   historyOverlay = document.getElementById('historyOverlay');
   historyOverlayTitle = document.getElementById('historyOverlayTitle');
@@ -2703,11 +2716,20 @@ function initializeLicenseManagement() {
   historyLicenseInput = document.getElementById('history-license-input');
   historyActivateLicense = document.getElementById('history-activate-license');
   
+  // Set up billing cycle toggle
+  if (monthlyPlanBtn) {
+    monthlyPlanBtn.addEventListener('click', () => switchBillingCycle('monthly'));
+  }
+
+  if (yearlyPlanBtn) {
+    yearlyPlanBtn.addEventListener('click', () => switchBillingCycle('yearly'));
+  }
+
   // Set up event listeners
   if (buyCoinbaseBtn) {
     buyCoinbaseBtn.addEventListener('click', handleCoinbasePurchase);
   }
-  
+
   if (buyPaypalBtn) {
     buyPaypalBtn.addEventListener('click', handlePaypalPurchase);
   }
@@ -2908,6 +2930,33 @@ function confirmEmailInput() {
   }
 }
 
+// Switch billing cycle (monthly/yearly)
+function switchBillingCycle(cycle) {
+  selectedBillingCycle = cycle;
+
+  // Update button states
+  if (monthlyPlanBtn && yearlyPlanBtn) {
+    monthlyPlanBtn.classList.toggle('billing-toggle-btn--active', cycle === 'monthly');
+    yearlyPlanBtn.classList.toggle('billing-toggle-btn--active', cycle === 'yearly');
+  }
+
+  // Update price and description
+  if (planPrice && planDescription) {
+    if (cycle === 'monthly') {
+      planPrice.innerHTML = '$4.99<span style="font-size: 16px;">/month</span>';
+      planDescription.textContent = 'Billed monthly, cancel anytime';
+    } else {
+      planPrice.innerHTML = '$49<span style="font-size: 16px;">/year</span>';
+      planDescription.textContent = 'Save 18% compared to monthly';
+    }
+  }
+}
+
+// Get product code based on selected billing cycle
+function getSelectedProductCode() {
+  return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly' : 'autopurge_pro_yearly';
+}
+
 // Handle Coinbase purchase
 async function handleCoinbasePurchase() {
   console.log('handleCoinbasePurchase called');
@@ -2921,7 +2970,7 @@ async function handleCoinbasePurchase() {
     const response = await chrome.runtime.sendMessage({
       action: 'checkout:create',
       provider: 'coinbase',
-      productCode: 'autopurge_pro_001',
+      productCode: getSelectedProductCode(),
       email: email
     });
 
@@ -3435,7 +3484,7 @@ function showUpgradeModal(title, description) {
         const response = await chrome.runtime.sendMessage({
           action: 'checkout:create',
           provider: 'coinbase',
-          productCode: 'autopurge_pro_001',
+          productCode: getSelectedProductCode(),
           email: email
         });
 
