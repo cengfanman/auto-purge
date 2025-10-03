@@ -454,7 +454,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       (async () => {
         try {
           const result = await licenseManager.createCheckout(message.email);
-          sendResponse({ ok: true, url: result });
+          
+          // Try to open the checkout URL in a new tab
+          try {
+            await chrome.tabs.create({ url: result });
+            sendResponse({ ok: true, url: result });
+          } catch (tabError) {
+            // If tab creation fails, still return success but indicate tab error
+            console.warn('Failed to create tab:', tabError);
+            sendResponse({ 
+              ok: true, 
+              url: result, 
+              hosted_url: result,
+              tabError: true 
+            });
+          }
         } catch (error) {
           sendResponse({ ok: false, error: error.message });
         }
