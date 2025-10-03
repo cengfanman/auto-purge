@@ -111,6 +111,12 @@ let deleteHistoryRecords = null;
 let deleteCancelBtn = null;
 let deleteConfirmBtn = null;
 
+// Email input modal elements
+let emailInputModal = null;
+let checkoutEmailInput = null;
+let emailCancelBtn = null;
+let emailConfirmBtn = null;
+let emailError = null;
 
 // History records elements
 let refreshHistoryBtn = null;
@@ -197,8 +203,21 @@ function getDOMElements() {
   deleteHistoryRecords = document.getElementById('deleteHistoryRecords');
   deleteCancelBtn = document.getElementById('deleteCancelBtn');
   deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
-  
-  
+
+  // Email input modal elements
+  emailInputModal = document.getElementById('emailInputModal');
+  checkoutEmailInput = document.getElementById('checkoutEmailInput');
+  emailCancelBtn = document.getElementById('emailCancelBtn');
+  emailConfirmBtn = document.getElementById('emailConfirmBtn');
+  emailError = document.getElementById('emailError');
+  console.log('Email modal elements initialized:', {
+    emailInputModal,
+    checkoutEmailInput,
+    emailCancelBtn,
+    emailConfirmBtn,
+    emailError
+  });
+
   // History records elements
   refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
   exportHistoryBtn = document.getElementById('exportHistoryBtn');
@@ -729,7 +748,7 @@ function setupEventListeners() {
   // Delete password modal
   if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', hideDeletePasswordModal);
   if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', confirmDeletePassword);
-  
+
   // 点击模态框背景关闭
   if (deletePasswordModal) {
     deletePasswordModal.addEventListener('click', (e) => {
@@ -738,7 +757,29 @@ function setupEventListeners() {
       }
     });
   }
-  
+
+  // Email input modal
+  if (emailCancelBtn) emailCancelBtn.addEventListener('click', hideEmailInputModal);
+  if (emailConfirmBtn) emailConfirmBtn.addEventListener('click', confirmEmailInput);
+
+  // Allow Enter key to submit
+  if (checkoutEmailInput) {
+    checkoutEmailInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmEmailInput();
+      }
+    });
+  }
+
+  // Click modal background to close
+  if (emailInputModal) {
+    emailInputModal.addEventListener('click', (e) => {
+      if (e.target === emailInputModal) {
+        hideEmailInputModal();
+      }
+    });
+  }
+
   // History records
   if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
   if (exportHistoryBtn) exportHistoryBtn.addEventListener('click', exportHistoryRecords);
@@ -2772,22 +2813,123 @@ async function updateLicenseUI() {
   }
 }
 
+// Email input modal promise resolver
+let emailInputResolver = null;
+
+// Show email input modal
+function showEmailInputModal() {
+  console.log('showEmailInputModal called');
+  console.log('emailInputModal:', emailInputModal);
+
+  return new Promise((resolve, reject) => {
+    emailInputResolver = { resolve, reject };
+
+    if (emailInputModal) {
+      console.log('Showing email modal');
+      emailInputModal.style.display = 'flex';
+      if (checkoutEmailInput) {
+        checkoutEmailInput.focus();
+        checkoutEmailInput.value = '';
+      }
+      if (emailError) {
+        emailError.style.display = 'none';
+      }
+    } else {
+      console.error('emailInputModal element not found!');
+      reject(new Error('Email modal not found'));
+    }
+  });
+}
+
+// Hide email input modal
+function hideEmailInputModal() {
+  if (emailInputModal) {
+    emailInputModal.style.display = 'none';
+    if (checkoutEmailInput) {
+      checkoutEmailInput.value = '';
+    }
+    if (emailError) {
+      emailError.style.display = 'none';
+    }
+  }
+
+  // Reject the promise if user cancels
+  if (emailInputResolver) {
+    emailInputResolver.reject(new Error('User cancelled email input'));
+    emailInputResolver = null;
+  }
+}
+
+// Validate email format
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Confirm email input
+function confirmEmailInput() {
+  if (!checkoutEmailInput) {
+    return;
+  }
+
+  const email = checkoutEmailInput.value.trim();
+
+  if (!email) {
+    if (emailError) {
+      emailError.textContent = 'Please enter an email address';
+      emailError.style.display = 'block';
+    }
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    if (emailError) {
+      emailError.textContent = 'Please enter a valid email address';
+      emailError.style.display = 'block';
+    }
+    return;
+  }
+
+  // Email is valid, resolve the promise
+  if (emailInputResolver) {
+    emailInputResolver.resolve(email);
+    emailInputResolver = null;
+  }
+
+  // Hide the modal
+  if (emailInputModal) {
+    emailInputModal.style.display = 'none';
+    if (checkoutEmailInput) {
+      checkoutEmailInput.value = '';
+    }
+    if (emailError) {
+      emailError.style.display = 'none';
+    }
+  }
+}
+
 // Handle Coinbase purchase
 async function handleCoinbasePurchase() {
+  console.log('handleCoinbasePurchase called');
   try {
+    // Show email input modal and wait for user input
+    const email = await showEmailInputModal();
+    console.log('Email received:', email);
+
     showLicenseMessage('Opening Coinbase checkout...', 'info');
-    
+
     const response = await chrome.runtime.sendMessage({
       action: 'checkout:create',
       provider: 'coinbase',
-      productCode: 'autopurge_pro_001'
+      productCode: 'autopurge_pro_001',
+      email: email
     });
-    
+
     if (response && response.ok) {
       if (response.tabError) {
         // Tab creation failed, provide manual link
         showLicenseMessage(
-          `Checkout created! If the page didn't open automatically, <a href="${response.hosted_url}" target="_blank">click here to open Coinbase checkout</a>. Complete your purchase and return here to activate your license.`, 
+          `Checkout created! If the page didn't open automatically, <a href="${response.hosted_url}" target="_blank">click here to open Coinbase checkout</a>. Complete your purchase and return here to activate your license.`,
           'warning'
         );
       } else {
@@ -2798,7 +2940,10 @@ async function handleCoinbasePurchase() {
     }
   } catch (error) {
     console.error('Coinbase purchase failed:', error);
-    showLicenseMessage('Failed to open checkout. Please try again.', 'error');
+    // Don't show error if user cancelled email input
+    if (error.message !== 'User cancelled email input') {
+      showLicenseMessage('Failed to open checkout. Please try again.', 'error');
+    }
   }
 }
 
@@ -3281,15 +3426,19 @@ function showUpgradeModal(title, description) {
   if (modalBuyCoinbase) {
     modalBuyCoinbase.addEventListener('click', async () => {
       try {
+        // Show email input modal and wait for user input
+        const email = await showEmailInputModal();
+
         modalBuyCoinbase.textContent = 'Opening checkout...';
         modalBuyCoinbase.disabled = true;
-        
+
         const response = await chrome.runtime.sendMessage({
           action: 'checkout:create',
           provider: 'coinbase',
-          productCode: 'autopurge_pro_001'
+          productCode: 'autopurge_pro_001',
+          email: email
         });
-        
+
         if (response && response.ok) {
           if (response.tabError) {
             // Tab creation failed, provide manual link
@@ -3314,7 +3463,10 @@ function showUpgradeModal(title, description) {
         console.error('Coinbase purchase failed:', error);
         modalBuyCoinbase.textContent = 'Buy with Coinbase';
         modalBuyCoinbase.disabled = false;
-        alert('Failed to create checkout. Please try again.');
+        // Don't show error if user cancelled email input
+        if (error.message !== 'User cancelled email input') {
+          alert('Failed to create checkout. Please try again.');
+        }
       }
     });
   }

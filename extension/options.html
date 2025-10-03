@@ -1459,6 +1459,25 @@
     </div>
   </div>
 
+  <!-- Email Input Modal for Checkout -->
+  <div id="emailInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+      <h3 style="margin-top: 0; color: #333;">Enter Your Email</h3>
+      <p style="color: #666; margin-bottom: 20px;">We'll send your license key and order confirmation to this email address:</p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email Address:</label>
+        <input type="email" id="checkoutEmailInput" placeholder="your@email.com" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        <span id="emailError" style="color: #dc3545; font-size: 14px; display: none; margin-top: 5px;">Please enter a valid email address</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="emailCancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        <button id="emailConfirmBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue to Checkout</button>
+      </div>
+    </div>
+  </div>
+
   <script src="options.js"></script>
 </body>
 </html>
