@@ -323,6 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 强制显示默认内容
   forceShowContent();
   
+  // 自动锁定Vault（安全措施）
+  await autoLockVault();
+  
   // 加载数据
   await loadData();
   
@@ -334,6 +337,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // 设置调试按钮的事件监听器
   setupDebugButtonListeners();
+  
+  // 设置页面可见性监听器（安全措施）
+  setupVisibilityListener();
   
   // 初始化许可证管理
   initializeLicenseManagement();
@@ -375,6 +381,145 @@ function forceShowContent() {
   });
   
   console.log('Content display forced');
+}
+
+// Debug function to check current license and vault status
+async function debugLicenseAndVaultStatus() {
+  try {
+    console.log('=== DEBUG: License and Vault Status ===');
+    
+    // Check license state
+    const licenseResponse = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    console.log('License State:', licenseResponse);
+    
+    // Check vault status
+    const vaultStatus = await checkVaultStatus();
+    console.log('Vault Status:', vaultStatus);
+    
+    // Check password protection status
+    const stored = await chrome.storage.local.get([
+      'passwordProtectionEnabled', 
+      'vaultUnlocked', 
+      'licenseData', 
+      'plan',
+      'passwordHash'
+    ]);
+    console.log('Storage Status:', {
+      passwordProtectionEnabled: stored.passwordProtectionEnabled,
+      vaultUnlocked: stored.vaultUnlocked,
+      hasLicenseData: !!stored.licenseData,
+      plan: stored.plan,
+      hasPasswordHash: !!stored.passwordHash
+    });
+    
+    // Check if license is valid
+    if (stored.licenseData) {
+      const verifyResponse = await chrome.runtime.sendMessage({ action: 'license:verify' });
+      console.log('License Verification:', verifyResponse);
+    }
+    
+    console.log('=== END DEBUG ===');
+  } catch (error) {
+    console.error('Debug failed:', error);
+  }
+}
+
+// Add debug function to window for easy access
+window.debugLicenseAndVaultStatus = debugLicenseAndVaultStatus;
+
+// Fix function to correct vault lock status
+async function fixVaultLockStatus() {
+  try {
+    console.log('=== FIXING VAULT LOCK STATUS ===');
+    
+    const stored = await chrome.storage.local.get([
+      'passwordProtectionEnabled', 
+      'vaultUnlocked', 
+      'passwordHash'
+    ]);
+    
+    console.log('Current status:', {
+      passwordProtectionEnabled: stored.passwordProtectionEnabled,
+      vaultUnlocked: stored.vaultUnlocked,
+      hasPasswordHash: !!stored.passwordHash
+    });
+    
+    if (stored.passwordProtectionEnabled && stored.passwordHash) {
+      // Password protection is enabled, vault should be locked
+      await chrome.storage.local.set({ vaultUnlocked: false });
+      console.log('✅ Vault locked (password protection enabled)');
+      
+      // Update History Records display
+      await updateHistoryDisplay();
+      
+      alert('Vault has been locked. You can now use the unlock feature.');
+    } else if (!stored.passwordProtectionEnabled) {
+      // Password protection is disabled, vault should be unlocked
+      await chrome.storage.local.set({ vaultUnlocked: true });
+      console.log('✅ Vault unlocked (password protection disabled)');
+      
+      // Update History Records display
+      await updateHistoryDisplay();
+      
+      alert('Vault has been unlocked (password protection disabled).');
+    } else {
+      console.log('❌ No password hash found. Please set a password first.');
+      alert('Please set a password first before using vault protection.');
+    }
+    
+    console.log('=== FIX COMPLETED ===');
+  } catch (error) {
+    console.error('Fix failed:', error);
+    alert('Failed to fix vault status: ' + error.message);
+  }
+}
+
+// Add fix function to window for easy access
+window.fixVaultLockStatus = fixVaultLockStatus;
+
+// Auto lock vault on page load for security
+async function autoLockVault() {
+  try {
+    console.log('=== AUTO LOCKING VAULT FOR SECURITY ===');
+    
+    const stored = await chrome.storage.local.get([
+      'passwordProtectionEnabled', 
+      'passwordHash'
+    ]);
+    
+    // Only auto-lock if password protection is enabled
+    if (stored.passwordProtectionEnabled && stored.passwordHash) {
+      await chrome.storage.local.set({ vaultUnlocked: false });
+      console.log('✅ Vault auto-locked on page load (password protection enabled)');
+    } else {
+      console.log('ℹ️ No auto-lock needed (password protection disabled or no password set)');
+    }
+  } catch (error) {
+    console.error('Failed to auto-lock vault:', error);
+  }
+}
+
+// Setup visibility listener for additional security
+function setupVisibilityListener() {
+  try {
+    // Listen for page visibility changes
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden) {
+        console.log('Page hidden, auto-locking vault for security...');
+        await autoLockVault();
+      }
+    });
+    
+    // Also listen for page unload (when user closes tab)
+    window.addEventListener('beforeunload', async () => {
+      console.log('Page unloading, auto-locking vault for security...');
+      await autoLockVault();
+    });
+    
+    console.log('✅ Visibility listeners set up for vault security');
+  } catch (error) {
+    console.error('Failed to setup visibility listeners:', error);
+  }
 }
 
 // Load configuration and data
@@ -1776,6 +1921,11 @@ async function updateHistoryUI() {
     // 更新历史记录列表
     updateHistoryList(historyRecords);
     
+    // 检查license状态并更新overlay
+    const licenseResponse = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    const license = licenseResponse || { plan: 'free' };
+    await updateHistoryOverlay(license);
+    
     console.log('=== updateHistoryUI SUCCESS ===');
   } catch (error) {
     console.error('=== updateHistoryUI ERROR ===');
@@ -1938,11 +2088,17 @@ async function togglePasswordProtection() {
 // 启用密码保护
 async function enablePasswordProtection() {
   try {
-    // 保存密码保护状态
-    await chrome.storage.local.set({ passwordProtectionEnabled: true });
+    // 保存密码保护状态并锁定Vault
+    await chrome.storage.local.set({ 
+      passwordProtectionEnabled: true,
+      vaultUnlocked: false  // 启用密码保护时自动锁定Vault
+    });
     
     // 更新UI状态
     await updatePasswordUI();
+    
+    // 更新History Records显示
+    await updateHistoryUI();
     
     showMessage('Password protection enabled', 'success');
   } catch (error) {
@@ -1955,11 +2111,17 @@ async function enablePasswordProtection() {
 // 禁用密码保护
 async function disablePasswordProtection() {
   try {
-    // 保存密码保护状态
-    await chrome.storage.local.set({ passwordProtectionEnabled: false });
+    // 保存密码保护状态并解锁Vault
+    await chrome.storage.local.set({ 
+      passwordProtectionEnabled: false,
+      vaultUnlocked: true  // 禁用密码保护时自动解锁Vault
+    });
     
     // 更新UI状态
     await updatePasswordUI();
+    
+    // 更新History Records显示
+    await updateHistoryUI();
     
     showMessage('Password protection disabled', 'success');
   } catch (error) {
