@@ -348,18 +348,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 function forceShowContent() {
   console.log('Force showing content...');
   
-  // 确保默认显示 Overview 部分
-  const overviewSection = document.getElementById('overview');
-  if (overviewSection) {
-    overviewSection.classList.add('active');
-    overviewSection.style.display = 'block';
-    console.log('Overview section activated');
+  // 确保默认显示 Domains 部分
+  const domainsSection = document.getElementById('domains');
+  if (domainsSection) {
+    domainsSection.classList.add('active');
+    domainsSection.style.display = 'block';
+    console.log('Domains section activated');
   }
   
   // 确保其他部分隐藏
   const allSections = document.querySelectorAll('.content-section');
   allSections.forEach(section => {
-    if (section.id !== 'overview') {
+    if (section.id !== 'domains') {
       section.classList.remove('active');
       section.style.display = 'none';
     }
@@ -369,7 +369,7 @@ function forceShowContent() {
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
     item.classList.remove('active');
-    if (item.dataset.section === 'overview') {
+    if (item.dataset.section === 'domains') {
       item.classList.add('active');
     }
   });
