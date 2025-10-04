@@ -1066,17 +1066,30 @@ function updateDomainLists() {
   if (presetDomainsList) {
     console.log('Preset domains list element found:', presetDomainsList);
     
-    // 只有当有预设域名时才清空并重新填充
-    if (presetDomains && presetDomains.length > 0) {
-      presetDomainsList.innerHTML = '';
-      presetDomains.forEach(domain => {
-        const domainItem = createDomainItem(domain, 'preset');
-        presetDomainsList.appendChild(domainItem);
-        console.log('Added preset domain:', domain);
-      });
-    } else {
-      console.log('No preset domains to display, keeping static content');
-    }
+    // Get removed preset domains
+    chrome.storage.local.get(['removedPresetDomains']).then(stored => {
+      const removedPresetDomains = stored.removedPresetDomains || [];
+      console.log('Removed preset domains:', removedPresetDomains);
+      
+      // Filter out removed preset domains
+      const filteredPresetDomains = presetDomains.filter(domain => 
+        !removedPresetDomains.includes(domain)
+      );
+      console.log('Filtered preset domains:', filteredPresetDomains);
+      
+      // 只有当有预设域名时才清空并重新填充
+      if (filteredPresetDomains && filteredPresetDomains.length > 0) {
+        presetDomainsList.innerHTML = '';
+        filteredPresetDomains.forEach(domain => {
+          const domainItem = createDomainItem(domain, 'preset');
+          presetDomainsList.appendChild(domainItem);
+          console.log('Added preset domain:', domain);
+        });
+      } else {
+        presetDomainsList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">All preset domains have been removed</p>';
+        console.log('No preset domains to display after filtering');
+      }
+    });
   } else {
     console.error('Preset domains list element not found!');
   }
@@ -1114,13 +1127,18 @@ function createDomainItem(domain, type) {
   
   item.appendChild(domainName);
   
+  // Add remove button for both custom and preset domains
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-btn';
+  removeBtn.textContent = '×';
+  
   if (type === 'custom') {
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
     removeBtn.addEventListener('click', () => removeCustomDomain(domain));
-    item.appendChild(removeBtn);
+  } else if (type === 'preset') {
+    removeBtn.addEventListener('click', () => removePresetDomain(domain));
   }
+  
+  item.appendChild(removeBtn);
   
   return item;
 }
@@ -1215,6 +1233,47 @@ async function removeCustomDomain(domain) {
   } catch (error) {
     console.error('Failed to remove domain:', error);
     showError('Failed to remove domain');
+  }
+}
+
+// Remove preset domain
+async function removePresetDomain(domain) {
+  console.log('Removing preset domain:', domain);
+  
+  try {
+    // Get current removed preset domains
+    const stored = await chrome.storage.local.get(['removedPresetDomains']);
+    const removedPresetDomains = stored.removedPresetDomains || [];
+    
+    // Add domain to removed list if not already there
+    if (!removedPresetDomains.includes(domain)) {
+      removedPresetDomains.push(domain);
+      
+      // Save updated list
+      await chrome.storage.local.set({ removedPresetDomains });
+      
+      console.log('Preset domain removed, new removed list:', removedPresetDomains);
+      
+      // Notify background script to update removed preset domains
+      try {
+        await chrome.runtime.sendMessage({ action: 'updateRemovedPresetDomains' });
+        console.log('Background script notified of removed preset domains update');
+      } catch (error) {
+        console.warn('Failed to notify background script:', error);
+      }
+      
+      // Update UI
+      updateDomainLists();
+      
+      showSuccess(`Preset domain "${domain}" removed successfully`);
+    } else {
+      console.log('Preset domain already removed:', domain);
+      showError('Domain already removed');
+    }
+    
+  } catch (error) {
+    console.error('Failed to remove preset domain:', error);
+    showError('Failed to remove preset domain');
   }
 }
 

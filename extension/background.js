@@ -41,6 +41,7 @@ let isProEnabled = false;
 
 // Load preset domains and configuration on startup
 let presetDomains = [];
+let removedPresetDomains = [];
 let config = DEFAULT_CONFIG;
 
 // Initialize extension on startup and installation
@@ -57,6 +58,9 @@ async function initializeExtension() {
 
   // Load preset domains
   await loadPresetDomains();
+  
+  // Load removed preset domains
+  await loadRemovedPresetDomains();
 
   // Initialize Pro features if enabled
   if (config.plan === 'pro') {
@@ -95,6 +99,18 @@ async function loadPresetDomains() {
   }
 }
 
+// Load removed preset domains from storage
+async function loadRemovedPresetDomains() {
+  try {
+    const stored = await chrome.storage.local.get(['removedPresetDomains']);
+    removedPresetDomains = stored.removedPresetDomains || [];
+    console.log(`Loaded ${removedPresetDomains.length} removed preset domains:`, removedPresetDomains);
+  } catch (error) {
+    console.error('Failed to load removed preset domains:', error);
+    removedPresetDomains = [];
+  }
+}
+
 // Enhanced domain matching with protocol filtering and subdomain support
 function shouldPurgeDomain(url) {
   if (!config.enabled) {
@@ -121,11 +137,19 @@ function shouldPurgeDomain(url) {
       return false;
     }
     
-    // Check against preset domains
+    // Check against preset domains (excluding removed ones)
     console.log('Checking preset domains:', presetDomains);
+    console.log('Removed preset domains:', removedPresetDomains);
+    
     for (const domain of presetDomains) {
+      // Skip if domain was removed by user
+      if (removedPresetDomains.includes(domain)) {
+        console.log('Skipping removed preset domain:', domain);
+        continue;
+      }
+      
       if (hostname === domain || hostname.endsWith('.' + domain)) {
-        console.log('Match found in preset domains:', domain);
+        console.log('Match found in active preset domains:', domain);
         return true;
       }
     }
@@ -672,6 +696,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: true, domains: presetDomains });
         } catch (error) {
           console.error('Failed to reload preset domains:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      })();
+      return true; // Keep message channel open for async response
+      
+    case 'updateRemovedPresetDomains':
+      (async () => {
+        try {
+          await loadRemovedPresetDomains();
+          sendResponse({ success: true, removedDomains: removedPresetDomains });
+        } catch (error) {
+          console.error('Failed to update removed preset domains:', error);
           sendResponse({ success: false, error: error.message });
         }
       })();
