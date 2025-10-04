@@ -3,6 +3,25 @@
  * Handles settings, user management, and payment processing
  */
 
+// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes
+(function() {
+  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
+  chrome.storage.local.set = function(items, callback) {
+    console.log('🔍 [OPTIONS] chrome.storage.local.set called with:', items);
+    console.trace('Stack trace:');
+
+    // Check if overwriting plan or licenseData
+    if (items.plan !== undefined || items.licenseData !== undefined) {
+      console.warn('⚠️ [OPTIONS] WARNING: Writing plan or licenseData:', {
+        plan: items.plan,
+        licenseData: items.licenseData ? 'exists' : 'null/undefined'
+      });
+    }
+
+    return originalSet(items, callback);
+  };
+})();
+
 // Navigation functionality for left-right layout
 function setupNavigation() {
   console.log('Setting up navigation...');
@@ -3035,12 +3054,15 @@ async function updateLicenseUI() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
     const license = response || { plan: 'free' };
-    
+
+    // 🐛 DEBUG: Log complete license data
+    console.log('🔍 updateLicenseUI - Complete license data:', JSON.stringify(license, null, 2));
+
     // Update plan badge
     if (currentPlanBadge) {
       currentPlanBadge.className = 'ap-badge';
       currentPlanBadge.textContent = 'Free';
-      
+
       if (license.plan === 'pro') {
         currentPlanBadge.classList.add('ap-badge--pro');
         currentPlanBadge.textContent = 'Pro';
@@ -3051,32 +3073,47 @@ async function updateLicenseUI() {
         currentPlanBadge.classList.add('ap-badge--free');
       }
     }
-    
+
     // Update plan status
     if (currentPlanStatus) {
       if (license.plan === 'free') {
         currentPlanStatus.textContent = 'Basic features';
       } else {
-        const expiry = license.expiresAt ? new Date(license.expiresAt) : null;
+        const licenseData = license.licenseData || {};
+        console.log('🔍 licenseData:', licenseData);
+        console.log('🔍 licenseData.billingCycle:', licenseData.billingCycle);
+
+        const expiry = licenseData.expiresAt ? new Date(licenseData.expiresAt) : null;
+        const billingCycle = (licenseData.billingCycle || 'YEARLY').toUpperCase();
+        const planType = billingCycle === 'MONTHLY' ? 'Monthly' : 'Yearly';
+
+        console.log('🔍 billingCycle (after uppercase):', billingCycle);
+        console.log('🔍 planType:', planType);
+
         if (expiry) {
           const now = new Date();
           const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+          console.log('🔍 daysLeft:', daysLeft);
+
           if (daysLeft > 0) {
-            currentPlanStatus.textContent = `Premium features • ${daysLeft} days left`;
+            currentPlanStatus.textContent = `Premium features (${planType}) • ${daysLeft} days left`;
           } else {
-            currentPlanStatus.textContent = 'Premium features • Expired';
+            currentPlanStatus.textContent = `Premium features (${planType}) • Expired`;
           }
         } else {
-          currentPlanStatus.textContent = 'Premium features';
+          currentPlanStatus.textContent = `Premium features (${planType})`;
         }
       }
     }
     
     // Update license info
     if (licenseInfo && licenseCode) {
-      if (license.licCodeMasked && license.plan !== 'free') {
+      const licenseData = license.licenseData || {};
+      if (licenseData.licenseKey && license.plan !== 'free') {
         licenseInfo.style.display = 'block';
-        licenseCode.textContent = license.licCodeMasked;
+        // Mask license key (show first 8 chars + ***)
+        const maskedKey = licenseData.licenseKey.substring(0, 8) + '***';
+        licenseCode.textContent = maskedKey;
       } else {
         licenseInfo.style.display = 'none';
       }
@@ -3293,7 +3330,16 @@ async function handleLicenseActivation() {
     });
     
     if (response && response.ok) {
-      showLicenseMessage('License activated successfully! Welcome to AutoPurge Pro!', 'success');
+      // 显示激活成功消息，包含有效期信息
+      let message = 'License activated successfully! Welcome to AutoPurge Pro!';
+      if (response.data && response.data.expiresAt) {
+        const expiryDate = new Date(response.data.expiresAt);
+        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        const billingCycle = (response.data.billingCycle || 'YEARLY').toUpperCase();
+        const planType = billingCycle === 'MONTHLY' ? 'Monthly' : 'Yearly';
+        message = `🎉 License activated! AutoPurge Pro ${planType} - Valid for ${daysLeft} days (expires ${expiryDate.toLocaleDateString('en-US')})`;
+      }
+      showLicenseMessage(message, 'success');
       licenseKeyInput.value = '';
       updateLicenseUI();
     } else {
@@ -3547,7 +3593,16 @@ async function handleHistoryLicenseActivation() {
     });
     
     if (response && response.ok) {
-      alert('License activated successfully!');
+      // 显示激活成功消息，包含有效期信息
+      let message = 'License activated successfully!';
+      if (response.data && response.data.expiresAt) {
+        const expiryDate = new Date(response.data.expiresAt);
+        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        const billingCycle = response.data.billingCycle || 'yearly';
+        const planType = billingCycle === 'monthly' ? 'Monthly' : 'Yearly';
+        message = `🎉 License activated! AutoPurge Pro ${planType} - Valid for ${daysLeft} days (expires ${expiryDate.toLocaleDateString()})`;
+      }
+      alert(message);
       historyLicenseInput.value = '';
       updateLicenseUI();
     } else {

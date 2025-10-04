@@ -3,6 +3,25 @@
  * Modern, clean interface with proper error handling
  */
 
+// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes
+(function() {
+  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
+  chrome.storage.local.set = function(items, callback) {
+    console.log('🔍 [POPUP] chrome.storage.local.set called with:', items);
+    console.trace('Stack trace:');
+
+    // Check if overwriting plan or licenseData
+    if (items.plan !== undefined || items.licenseData !== undefined) {
+      console.warn('⚠️ [POPUP] WARNING: Writing plan or licenseData:', {
+        plan: items.plan,
+        licenseData: items.licenseData ? 'exists' : 'null/undefined'
+      });
+    }
+
+    return originalSet(items, callback);
+  };
+})();
+
 // DOM elements
 const statusBadge = document.getElementById('statusBadge');
 const statusDot = document.getElementById('statusDot');

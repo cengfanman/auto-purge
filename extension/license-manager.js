@@ -3,6 +3,25 @@
  * Handles license activation, verification, and management
  */
 
+// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes from license-manager
+(function() {
+  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
+  chrome.storage.local.set = function(items, callback) {
+    console.log('🔍 [LICENSE-MANAGER] chrome.storage.local.set called with:', items);
+    console.trace('Stack trace:');
+
+    // Check if overwriting plan or licenseData
+    if (items.plan !== undefined || items.licenseData !== undefined) {
+      console.warn('⚠️ [LICENSE-MANAGER] WARNING: Writing plan or licenseData:', {
+        plan: items.plan,
+        licenseData: items.licenseData ? 'exists' : 'null/undefined'
+      });
+    }
+
+    return originalSet(items, callback);
+  };
+})();
+
 class LicenseManager {
   constructor() {
     this.apiBaseUrl = 'https://api.autopurge.shop'; // 线上生产服务器
@@ -94,6 +113,9 @@ class LicenseManager {
         throw new Error(result.error || 'License activation failed');
       }
 
+      // 🐛 DEBUG: Log API response
+      console.log('🔍 API Response result.data:', JSON.stringify(result.data, null, 2));
+
       // Store license data
       const licenseData = {
         licenseKey: licenseKey,
@@ -101,16 +123,20 @@ class LicenseManager {
         expiresAt: result.data.expiresAt,
         maxDevices: result.data.maxDevices,
         currentDevices: result.data.currentDevices,
+        billingCycle: result.data.billingCycle || 'YEARLY',
+        validDays: result.data.validDays || 365,
         activatedAt: new Date().toISOString(),
         plan: 'pro' // Activated licenses are pro
       };
+
+      console.log('🔍 Prepared licenseData to store:', JSON.stringify(licenseData, null, 2));
 
       await chrome.storage.local.set({
         licenseData: licenseData,
         plan: 'pro'
       });
 
-      console.log('License activated successfully:', licenseData);
+      console.log('✅ License activated successfully:', licenseData);
 
       // Notify other parts of the extension
       chrome.runtime.sendMessage({
@@ -176,13 +202,21 @@ class LicenseManager {
 
         console.log('License verification successful:', verificationResult);
       } else {
-        console.warn('License is invalid or expired');
-        await this.handleInvalidLicense();
+        console.warn('⚠️ License verification returned invalid - checking if should clear license');
+
+        // Only clear license if it's truly expired/revoked, not if in grace period
+        if (!result.data.grace) {
+          console.warn('License is invalid (not in grace period) - clearing');
+          await this.handleInvalidLicense();
+        } else {
+          console.log('License in grace period - keeping active');
+        }
       }
 
       return verificationResult;
     } catch (error) {
-      console.error('License verification error:', error);
+      console.error('❌ License verification network error (keeping license):', error);
+      // Don't clear license on network errors - user should still be able to use the extension
       return { valid: false, reason: 'network_error', error: error.message };
     }
   }
@@ -192,6 +226,9 @@ class LicenseManager {
    */
   async handleInvalidLicense() {
     try {
+      console.warn('⚠️ handleInvalidLicense called - CLEARING LICENSE DATA');
+      console.trace('Stack trace to see who called this:');
+
       // Reset to free plan
       await chrome.storage.local.set({
         plan: 'free',
@@ -203,7 +240,7 @@ class LicenseManager {
         type: 'license:invalid'
       });
 
-      console.log('License invalidated, reset to free plan');
+      console.log('❌ License invalidated, reset to free plan');
     } catch (error) {
       console.error('Error handling invalid license:', error);
     }
@@ -313,8 +350,10 @@ class LicenseManager {
    * Start periodic license verification
    */
   async startLicenseVerification() {
-    // Initial verification
-    await this.verifyLicense();
+    // Initial verification (with logging)
+    console.log('🔍 Starting initial license verification...');
+    const result = await this.verifyLicense();
+    console.log('🔍 Initial verification result:', result);
 
     // Set up periodic verification
     if (this.verificationTimer) {

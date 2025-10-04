@@ -14,6 +14,25 @@ import { LicenseManager } from './license-manager.js';
 // Initialize license manager
 const licenseManager = new LicenseManager();
 
+// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes
+(function() {
+  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
+  chrome.storage.local.set = function(items, callback) {
+    console.log('🔍 [BACKGROUND] chrome.storage.local.set called with:', items);
+    console.trace('Stack trace:');
+
+    // Check if overwriting plan or licenseData
+    if (items.plan !== undefined || items.licenseData !== undefined) {
+      console.warn('⚠️ [BACKGROUND] WARNING: Writing plan or licenseData:', {
+        plan: items.plan,
+        licenseData: items.licenseData ? 'exists' : 'null/undefined'
+      });
+    }
+
+    return originalSet(items, callback);
+  };
+})();
+
 // Default configuration
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -51,14 +70,29 @@ async function initializeExtension() {
   // Initialize license manager first
   await licenseManager.initialize();
 
-  // Load or initialize configuration
+  // Load configuration from storage
   const stored = await chrome.storage.local.get();
+
+  // Merge with defaults, but preserve license data
   config = { ...DEFAULT_CONFIG, ...stored };
-  await chrome.storage.local.set(config);
+
+  // Only set missing config keys, don't overwrite license data
+  const configToUpdate = {};
+  for (const key of Object.keys(DEFAULT_CONFIG)) {
+    if (stored[key] === undefined) {
+      configToUpdate[key] = DEFAULT_CONFIG[key];
+    }
+  }
+
+  // Only update if there are missing keys
+  if (Object.keys(configToUpdate).length > 0) {
+    console.log('Setting missing config keys:', Object.keys(configToUpdate));
+    await chrome.storage.local.set(configToUpdate);
+  }
 
   // Load preset domains
   await loadPresetDomains();
-  
+
   // Load removed preset domains
   await loadRemovedPresetDomains();
 
