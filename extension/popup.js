@@ -50,6 +50,9 @@ let countdownInterval = null;
 let currentCountdown = 0;
 let isDeletionInProgress = false;
 
+// 记录已处理的URL，避免重复删除
+let processedUrls = new Set();
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup initialized');
@@ -356,24 +359,36 @@ function updateCurrentSiteUI(tabStatus) {
     console.log('config.enabled:', config.enabled);
     console.log('isDeletionInProgress:', isDeletionInProgress);
     console.log('countdownInterval:', countdownInterval);
-    
-    siteIcon.textContent = '🔞';
-    siteName.textContent = tabStatus.hostname || 'Adult Website';
-    
+
+    siteIcon.textContent = '🌐';
+    siteName.textContent = tabStatus.hostname || 'Monitored Website';
+
     // 显示检测徽章
     detectionBadge.style.display = 'flex';
-    
+
+    // 检查URL是否已处理过
+    const currentUrl = tabStatus.url || tabStatus.hostname;
+    if (processedUrls.has(currentUrl)) {
+      console.log('=== URL ALREADY PROCESSED, SKIPPING ===');
+      // 显示已删除状态
+      removalStatus.style.display = 'block';
+      siteStatus.style.display = 'none';
+      return;
+    }
+
     // 直接执行删除，不需要倒计时
     if (config.enabled && !isDeletionInProgress) {
       console.log('=== CONDITIONS MET, EXECUTING DELETION DIRECTLY ===');
+      // 标记URL已处理
+      processedUrls.add(currentUrl);
       executeDeletion();
     } else {
       console.log('=== CONDITIONS NOT MET, SHOWING STATUS ONLY ===');
       console.log('Reason: enabled=' + config.enabled + ', inProgress=' + isDeletionInProgress);
       siteStatus.textContent = `History will be cleared immediately`;
     }
-    
-    console.log('Site detected as adult content');
+
+    console.log('Site detected as monitored content');
   } else if (tabStatus.hostname && tabStatus.hostname !== 'Restricted Page' && tabStatus.hostname !== 'Invalid URL') {
     // Normal site
     siteIcon.textContent = '🌐';
@@ -427,10 +442,22 @@ function updateUI() {
 }
 
 // Refresh statistics
+let lastCheckedUrl = null;
 async function refreshStats() {
   try {
     await loadStats();
-    
+
+    // 获取当前标签页URL
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tab?.url || '';
+
+    // 如果URL变化了，清除已处理记录
+    if (currentUrl !== lastCheckedUrl) {
+      console.log('URL changed, clearing processed URLs');
+      processedUrls.clear();
+      lastCheckedUrl = currentUrl;
+    }
+
     // 如果删除已完成，不要重新检查标签页状态
     // 只在没有删除完成状态时检查状态
     if (!isDeletionInProgress && config.enabled && removalStatus.style.display === 'none') {
@@ -642,6 +669,8 @@ window.popupDebug = {
     resetSiteStatus();
     isDeletionInProgress = false;
     currentCountdown = 0;
+    processedUrls.clear();
+    lastCheckedUrl = null;
     console.log('Force reset complete');
   },
   // 测试调试

@@ -796,21 +796,23 @@
       </div>
       
       <nav class="nav-menu">
-        <div class="nav-item active" data-section="overview">
+        <!-- Hidden: Overview -->
+        <!-- <div class="nav-item active" data-section="overview">
           <i>🏠</i>
           <span>Overview</span>
-        </div>
-        
-        
-        <div class="nav-item" data-section="domains">
+        </div> -->
+
+
+        <div class="nav-item active" data-section="domains">
           <i>🌐</i>
           <span>Domain Management</span>
         </div>
-        
-        <div class="nav-item" data-section="features">
+
+        <!-- Hidden: Advanced Features -->
+        <!-- <div class="nav-item" data-section="features">
           <i>🚀</i>
           <span>Advanced Features</span>
-        </div>
+        </div> -->
         
         <div class="nav-item" data-section="subscription">
           <i>💎</i>
@@ -848,8 +850,8 @@
 
     <!-- Right Content Area -->
     <div class="content-area">
-      <!-- Overview Section -->
-      <div class="content-section active" id="overview" style="display: block;">
+      <!-- Overview Section - Hidden -->
+      <div class="content-section" id="overview" style="display: none;">
         <div class="content-header">
           <h2>Overview</h2>
           <p>Welcome to AutoPurge - Your privacy protection dashboard</p>
@@ -885,7 +887,7 @@
 
 
       <!-- Domain Management Section -->
-      <div class="content-section" id="domains">
+      <div class="content-section active" id="domains" style="display: block;">
         <div class="content-header">
           <h2>Domain Management</h2>
           <p>Manage which domains AutoPurge will protect</p>
@@ -962,8 +964,8 @@
         </div>
       </div>
 
-      <!-- Advanced Features Section -->
-      <div class="content-section" id="features">
+      <!-- Advanced Features Section - Hidden -->
+      <div class="content-section" id="features" style="display: none;">
         <div class="content-header">
           <h2>Advanced Features</h2>
           <p>Unlock premium features with Pro subscription</p>
