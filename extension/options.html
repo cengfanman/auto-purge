@@ -829,10 +829,11 @@
           <span>History Records</span>
         </div>
         
-        <div class="nav-item" data-section="account">
+        <!-- Hidden: Account (not needed for privacy tool) -->
+        <!-- <div class="nav-item" data-section="account">
           <i>👤</i>
           <span>Account</span>
-        </div>
+        </div> -->
         
         <div class="nav-divider"></div>
         
@@ -1433,8 +1434,8 @@
         </div>
       </div>
 
-      <!-- Account Section -->
-      <div class="content-section" id="account">
+      <!-- Account Section - Hidden (not needed for privacy tool) -->
+      <div class="content-section" id="account" style="display: none;">
         <div class="content-header">
           <h2>Account Settings</h2>
           <p>Manage your account and preferences</p>
@@ -1535,6 +1536,25 @@
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button id="emailCancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
         <button id="emailConfirmBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue to Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unlock Vault Modal -->
+  <div id="unlockVaultModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+      <h3 style="margin-top: 0; color: #333;">🔒 Unlock History Vault</h3>
+      <p style="color: #666; margin-bottom: 20px;">Enter your password to view deleted history records:</p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Password:</label>
+        <input type="password" id="unlockVaultPasswordInput" placeholder="Enter your password" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        <span id="unlockVaultError" style="color: #dc3545; font-size: 14px; display: none; margin-top: 5px;">Incorrect password</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="unlockVaultCancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        <button id="unlockVaultConfirmBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Unlock</button>
       </div>
     </div>
   </div>

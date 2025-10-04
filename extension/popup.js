@@ -679,27 +679,42 @@ window.popupDebug = {
 
 // Update plan badge based on license state
 async function updatePlanBadge() {
-  if (!planBadge) return;
-  
+  if (!planBadge) {
+    console.error('planBadge element not found!');
+    return;
+  }
+
   try {
+    console.log('=== Updating plan badge ===');
     const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    console.log('License state response:', response);
+
     const license = response || { plan: 'free' };
-    
+    console.log('License plan:', license.plan);
+    console.log('Has license:', license.hasLicense);
+    console.log('License data:', license.licenseData);
+
     // Reset classes
     planBadge.className = 'ap-badge';
-    
+
     // Update badge based on plan
     if (license.plan === 'pro') {
+      console.log('Setting badge to Pro');
       planBadge.classList.add('ap-badge--pro');
       planBadge.textContent = 'Pro';
     } else if (license.plan === 'pro_trial') {
+      console.log('Setting badge to Trial');
       planBadge.classList.add('ap-badge--trial');
       planBadge.textContent = 'Trial';
     } else {
+      console.log('Setting badge to Free');
       planBadge.classList.add('ap-badge--free');
       planBadge.textContent = 'Free';
     }
-    
+
+    console.log('Badge classes:', planBadge.className);
+    console.log('Badge text:', planBadge.textContent);
+
   } catch (error) {
     console.error('Failed to update plan badge:', error);
     // Default to free on error

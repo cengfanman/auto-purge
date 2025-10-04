@@ -102,6 +102,13 @@ let verifyConfirmBtn = null;
 let createPasswordModal = null;
 let createPasswordInput = null;
 let createConfirmPasswordInput = null;
+
+// Unlock vault modal elements
+let unlockVaultModal = null;
+let unlockVaultPasswordInput = null;
+let unlockVaultError = null;
+let unlockVaultCancelBtn = null;
+let unlockVaultConfirmBtn = null;
 let createCancelBtn = null;
 let createConfirmBtn = null;
 
@@ -216,6 +223,20 @@ function getDOMElements() {
     emailCancelBtn,
     emailConfirmBtn,
     emailError
+  });
+
+  // Unlock vault modal elements
+  unlockVaultModal = document.getElementById('unlockVaultModal');
+  unlockVaultPasswordInput = document.getElementById('unlockVaultPasswordInput');
+  unlockVaultError = document.getElementById('unlockVaultError');
+  unlockVaultCancelBtn = document.getElementById('unlockVaultCancelBtn');
+  unlockVaultConfirmBtn = document.getElementById('unlockVaultConfirmBtn');
+  console.log('Unlock vault modal elements initialized:', {
+    unlockVaultModal,
+    unlockVaultPasswordInput,
+    unlockVaultError,
+    unlockVaultCancelBtn,
+    unlockVaultConfirmBtn
   });
 
   // History records elements
@@ -776,6 +797,28 @@ function setupEventListeners() {
     emailInputModal.addEventListener('click', (e) => {
       if (e.target === emailInputModal) {
         hideEmailInputModal();
+      }
+    });
+  }
+
+  // Unlock vault modal
+  if (unlockVaultCancelBtn) unlockVaultCancelBtn.addEventListener('click', hideUnlockVaultModal);
+  if (unlockVaultConfirmBtn) unlockVaultConfirmBtn.addEventListener('click', confirmUnlockVault);
+
+  // Allow Enter key to submit unlock vault
+  if (unlockVaultPasswordInput) {
+    unlockVaultPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmUnlockVault();
+      }
+    });
+  }
+
+  // Click modal background to close unlock vault
+  if (unlockVaultModal) {
+    unlockVaultModal.addEventListener('click', (e) => {
+      if (e.target === unlockVaultModal) {
+        hideUnlockVaultModal();
       }
     });
   }
@@ -3334,21 +3377,38 @@ async function updateHistoryOverlay(license) {
         if (historyOverlayTitle) {
           historyOverlayTitle.textContent = 'Vault is locked';
         }
-        
+
         if (historyOverlayDescription) {
-          historyOverlayDescription.innerHTML = `
-            <button class="btn btn-primary" onclick="unlockVault()">
-              🔓 Unlock Vault
-            </button>
-          `;
+          // Clear existing content
+          historyOverlayDescription.innerHTML = '';
+
+          // Create unlock button
+          const unlockBtn = document.createElement('button');
+          unlockBtn.className = 'btn btn-primary';
+          unlockBtn.innerHTML = '🔓 Unlock Vault';
+          unlockBtn.style.cursor = 'pointer';
+
+          // Add click event listener
+          unlockBtn.addEventListener('click', async () => {
+            console.log('=== Unlock Vault button clicked ===');
+            try {
+              await unlockVault();
+            } catch (error) {
+              console.error('Error calling unlockVault:', error);
+            }
+          });
+
+          historyOverlayDescription.appendChild(unlockBtn);
+
+          console.log('Unlock Vault button created and event listener attached');
         }
-        
+
         // Hide Coinbase/License form for locked vault
         const licenseForm = historyOverlay.querySelector('.ap-license-form');
         const coinbaseBtn = historyOverlay.querySelector('.btn-coinbase');
         if (licenseForm) licenseForm.style.display = 'none';
         if (coinbaseBtn) coinbaseBtn.style.display = 'none';
-        
+
         historyOverlay.style.display = 'flex';
         
       } else {
@@ -3390,11 +3450,163 @@ async function checkVaultStatus() {
   }
 }
 
-// Unlock vault function (placeholder)
-function unlockVault() {
-  // This would typically show the password modal
-  // For now, just show a message
-  alert('Vault unlock functionality will be implemented here');
+// Unlock vault function
+async function unlockVault() {
+  console.log('=== unlockVault function called ===');
+
+  try {
+    // Check if password protection is enabled
+    console.log('Checking password protection status...');
+    const stored = await chrome.storage.local.get(['passwordHash', 'passwordProtectionEnabled']);
+    console.log('Password protection status:', {
+      hasPasswordHash: !!stored.passwordHash,
+      isProtectionEnabled: stored.passwordProtectionEnabled
+    });
+
+    if (!stored.passwordHash || !stored.passwordProtectionEnabled) {
+      // No password set, just unlock directly
+      console.log('No password set, unlocking directly...');
+      await chrome.storage.local.set({ vaultUnlocked: true });
+
+      // Get current license state
+      const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+      console.log('License state after direct unlock:', licenseState);
+
+      // Update overlay to hide it
+      if (typeof updateHistoryOverlay === 'function') {
+        await updateHistoryOverlay(licenseState);
+      }
+
+      console.log('Vault unlocked, refreshing history...');
+      await refreshHistoryRecords();
+      console.log('History refreshed');
+      return;
+    }
+
+    // Show unlock modal
+    console.log('Password is set, showing unlock modal...');
+    showUnlockVaultModal();
+    console.log('Unlock modal shown');
+
+  } catch (error) {
+    console.error('=== Error in unlockVault ===', error);
+    alert('Failed to unlock vault. Please try again.');
+  }
+}
+
+// Make unlockVault available globally for onclick handler
+window.unlockVault = unlockVault;
+
+// Show unlock vault modal
+function showUnlockVaultModal() {
+  console.log('=== showUnlockVaultModal called ===');
+  console.log('unlockVaultModal element:', unlockVaultModal);
+
+  if (!unlockVaultModal) {
+    console.error('unlockVaultModal element not found!');
+    return;
+  }
+
+  console.log('Setting modal display to flex...');
+  unlockVaultModal.style.display = 'flex';
+
+  if (unlockVaultPasswordInput) {
+    console.log('Clearing and focusing password input...');
+    unlockVaultPasswordInput.value = '';
+    unlockVaultPasswordInput.focus();
+  } else {
+    console.error('unlockVaultPasswordInput not found!');
+  }
+
+  if (unlockVaultError) {
+    unlockVaultError.style.display = 'none';
+  }
+
+  console.log('Modal should now be visible');
+}
+
+// Hide unlock vault modal
+function hideUnlockVaultModal() {
+  if (!unlockVaultModal) return;
+
+  unlockVaultModal.style.display = 'none';
+
+  if (unlockVaultPasswordInput) {
+    unlockVaultPasswordInput.value = '';
+  }
+
+  if (unlockVaultError) {
+    unlockVaultError.style.display = 'none';
+  }
+}
+
+// Confirm unlock vault
+async function confirmUnlockVault() {
+  if (!unlockVaultPasswordInput) return;
+
+  const password = unlockVaultPasswordInput.value.trim();
+
+  if (!password) {
+    if (unlockVaultError) {
+      unlockVaultError.textContent = 'Please enter a password';
+      unlockVaultError.style.display = 'block';
+    }
+    return;
+  }
+
+  try {
+    // Get stored password hash
+    const stored = await chrome.storage.local.get(['passwordHash']);
+
+    if (!stored.passwordHash) {
+      if (unlockVaultError) {
+        unlockVaultError.textContent = 'No password is set';
+        unlockVaultError.style.display = 'block';
+      }
+      return;
+    }
+
+    // Verify password (using simple btoa for now, same as password creation)
+    const passwordHash = btoa(password);
+
+    if (passwordHash !== stored.passwordHash) {
+      if (unlockVaultError) {
+        unlockVaultError.textContent = 'Incorrect password';
+        unlockVaultError.style.display = 'block';
+      }
+      // Clear input
+      unlockVaultPasswordInput.value = '';
+      unlockVaultPasswordInput.focus();
+      return;
+    }
+
+    // Password correct! Unlock vault
+    await chrome.storage.local.set({ vaultUnlocked: true });
+
+    // Hide modal
+    hideUnlockVaultModal();
+
+    // Get current license state
+    const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    console.log('License state after unlock:', licenseState);
+
+    // Update overlay to hide it
+    if (typeof updateHistoryOverlay === 'function') {
+      await updateHistoryOverlay(licenseState);
+    }
+
+    // Refresh history records to show unlocked content
+    await refreshHistoryRecords();
+
+    console.log('Vault unlocked successfully');
+
+  } catch (error) {
+    console.error('Error confirming unlock vault:', error);
+    if (unlockVaultError) {
+      unlockVaultError.textContent = 'Failed to unlock. Please try again.';
+      unlockVaultError.style.display = 'block';
+    }
+  }
 }
 
 // Show license message
