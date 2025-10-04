@@ -477,7 +477,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'checkout:create':
       (async () => {
         try {
-          const result = await licenseManager.createCheckout(message.email);
+          const result = await licenseManager.createCheckout(message.email, message.productCode);
           
           // Try to open the checkout URL in a new tab
           try {

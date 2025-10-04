@@ -343,7 +343,7 @@ class LicenseManager {
   /**
    * Create checkout URL for purchasing license
    */
-  async createCheckout(email) {
+  async createCheckout(email, productCode = 'autopurge_pro_yearly') {
     try {
       const response = await fetch(`${this.apiBaseUrl}/checkout/create`, {
         method: 'POST',
@@ -351,7 +351,7 @@ class LicenseManager {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          productCode: 'autopurge_pro_001',
+          productCode: productCode,
           email: email
         })
       });

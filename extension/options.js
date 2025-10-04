@@ -3218,7 +3218,11 @@ function switchBillingCycle(cycle) {
 
 // Get product code based on selected billing cycle
 function getSelectedProductCode() {
-  return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly' : 'autopurge_pro_yearly';
+  // 使用测试产品（$0.01）便于测试
+  return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly_test' : 'autopurge_pro_yearly_test';
+
+  // 正式环境使用：
+  // return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly' : 'autopurge_pro_yearly';
 }
 
 // Handle Coinbase purchase
