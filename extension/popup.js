@@ -28,6 +28,19 @@ const upgradeBtn = document.getElementById('upgradeBtn');
 const helpLink = document.getElementById('helpLink');
 const feedbackLink = document.getElementById('feedbackLink');
 const privacyLink = document.getElementById('privacyLink');
+const planBadge = document.getElementById('plan-badge');
+
+// License management elements
+const licenseStatus = document.getElementById('licenseStatus');
+const licenseInfo = document.getElementById('licenseInfo');
+const licenseActivation = document.getElementById('licenseActivation');
+const licenseKeyInput = document.getElementById('licenseKeyInput');
+const activateLicenseBtn = document.getElementById('activateLicenseBtn');
+const licenseError = document.getElementById('licenseError');
+const licenseSuccess = document.getElementById('licenseSuccess');
+const licenseActions = document.getElementById('licenseActions');
+const manageLicenseBtn = document.getElementById('manageLicenseBtn');
+const deactivateLicenseBtn = document.getElementById('deactivateLicenseBtn');
 
 // Current configuration
 let config = {};
@@ -37,13 +50,26 @@ let countdownInterval = null;
 let currentCountdown = 0;
 let isDeletionInProgress = false;
 
+// 记录已处理的URL，避免重复删除
+let processedUrls = new Set();
+
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Popup initialized');
   await loadData();
+  await updatePlanBadge();
+  await updateLicenseStatus();
   setupEventListeners();
   updateUI();
-  
+
+  // Listen for license changes
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'license:activated' || message.type === 'license:changed' || message.type === 'license:deactivated') {
+      updatePlanBadge();
+      updateLicenseStatus();
+    }
+  });
+
   // Refresh data periodically while popup is open
   setInterval(refreshStats, 3000);
 });
@@ -333,24 +359,36 @@ function updateCurrentSiteUI(tabStatus) {
     console.log('config.enabled:', config.enabled);
     console.log('isDeletionInProgress:', isDeletionInProgress);
     console.log('countdownInterval:', countdownInterval);
-    
-    siteIcon.textContent = '🔞';
-    siteName.textContent = tabStatus.hostname || 'Adult Website';
-    
+
+    siteIcon.textContent = '🌐';
+    siteName.textContent = tabStatus.hostname || 'Monitored Website';
+
     // 显示检测徽章
     detectionBadge.style.display = 'flex';
-    
+
+    // 检查URL是否已处理过
+    const currentUrl = tabStatus.url || tabStatus.hostname;
+    if (processedUrls.has(currentUrl)) {
+      console.log('=== URL ALREADY PROCESSED, SKIPPING ===');
+      // 显示已删除状态
+      removalStatus.style.display = 'block';
+      siteStatus.style.display = 'none';
+      return;
+    }
+
     // 直接执行删除，不需要倒计时
     if (config.enabled && !isDeletionInProgress) {
       console.log('=== CONDITIONS MET, EXECUTING DELETION DIRECTLY ===');
+      // 标记URL已处理
+      processedUrls.add(currentUrl);
       executeDeletion();
     } else {
       console.log('=== CONDITIONS NOT MET, SHOWING STATUS ONLY ===');
       console.log('Reason: enabled=' + config.enabled + ', inProgress=' + isDeletionInProgress);
       siteStatus.textContent = `History will be cleared immediately`;
     }
-    
-    console.log('Site detected as adult content');
+
+    console.log('Site detected as monitored content');
   } else if (tabStatus.hostname && tabStatus.hostname !== 'Restricted Page' && tabStatus.hostname !== 'Invalid URL') {
     // Normal site
     siteIcon.textContent = '🌐';
@@ -404,10 +442,22 @@ function updateUI() {
 }
 
 // Refresh statistics
+let lastCheckedUrl = null;
 async function refreshStats() {
   try {
     await loadStats();
-    
+
+    // 获取当前标签页URL
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tab?.url || '';
+
+    // 如果URL变化了，清除已处理记录
+    if (currentUrl !== lastCheckedUrl) {
+      console.log('URL changed, clearing processed URLs');
+      processedUrls.clear();
+      lastCheckedUrl = currentUrl;
+    }
+
     // 如果删除已完成，不要重新检查标签页状态
     // 只在没有删除完成状态时检查状态
     if (!isDeletionInProgress && config.enabled && removalStatus.style.display === 'none') {
@@ -421,25 +471,61 @@ async function refreshStats() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Refresh site button
-  refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
-  
+  // Refresh site button (optional - may be commented out in HTML)
+  if (refreshSiteBtn) {
+    refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
+  }
+
   // Toggle extension
-  toggleBtn.addEventListener('click', toggleExtension);
-  
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', toggleExtension);
+  }
+
   // Clear recent history
-  clearHistoryBtn.addEventListener('click', clearRecentHistory);
-  
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', clearRecentHistory);
+  }
+
   // Settings button
-  settingsBtn.addEventListener('click', openSettings);
-  
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', openSettings);
+  }
+
   // Upgrade button
-  upgradeBtn.addEventListener('click', openUpgrade);
-  
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', openUpgrade);
+  }
+
+  // License management
+  if (activateLicenseBtn) {
+    activateLicenseBtn.addEventListener('click', activateLicense);
+  }
+  if (deactivateLicenseBtn) {
+    deactivateLicenseBtn.addEventListener('click', deactivateLicense);
+  }
+  if (manageLicenseBtn) {
+    manageLicenseBtn.addEventListener('click', manageLicense);
+  }
+
+  // License key input
+  if (licenseKeyInput) {
+    licenseKeyInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        activateLicense();
+      }
+    });
+  }
+
   // Footer links
-  helpLink.addEventListener('click', openHelp);
-  feedbackLink.addEventListener('click', openFeedback);
-  privacyLink.addEventListener('click', openPrivacy);
+  if (helpLink) {
+    helpLink.addEventListener('click', openHelp);
+  }
+  if (feedbackLink) {
+    feedbackLink.addEventListener('click', openFeedback);
+  }
+  if (privacyLink) {
+    privacyLink.addEventListener('click', openPrivacy);
+  }
 }
 
 // Toggle extension on/off
@@ -607,11 +693,214 @@ window.popupDebug = {
     resetSiteStatus();
     isDeletionInProgress = false;
     currentCountdown = 0;
+    processedUrls.clear();
+    lastCheckedUrl = null;
     console.log('Force reset complete');
   },
   // 测试调试
   testDebug: () => testDebug()
 };
+
+// Update plan badge based on license state
+async function updatePlanBadge() {
+  if (!planBadge) {
+    console.error('planBadge element not found!');
+    return;
+  }
+
+  try {
+    console.log('=== Updating plan badge ===');
+    const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    console.log('License state response:', response);
+
+    const license = response || { plan: 'free' };
+    console.log('License plan:', license.plan);
+    console.log('Has license:', license.hasLicense);
+    console.log('License data:', license.licenseData);
+
+    // Reset classes
+    planBadge.className = 'ap-badge';
+
+    // Update badge based on plan
+    if (license.plan === 'pro') {
+      console.log('Setting badge to Pro');
+      planBadge.classList.add('ap-badge--pro');
+      planBadge.textContent = 'Pro';
+    } else if (license.plan === 'pro_trial') {
+      console.log('Setting badge to Trial');
+      planBadge.classList.add('ap-badge--trial');
+      planBadge.textContent = 'Trial';
+    } else {
+      console.log('Setting badge to Free');
+      planBadge.classList.add('ap-badge--free');
+      planBadge.textContent = 'Free';
+    }
+
+    console.log('Badge classes:', planBadge.className);
+    console.log('Badge text:', planBadge.textContent);
+
+  } catch (error) {
+    console.error('Failed to update plan badge:', error);
+    // Default to free on error
+    planBadge.className = 'ap-badge ap-badge--free';
+    planBadge.textContent = 'Free';
+  }
+}
+
+// License Management Functions
+
+async function updateLicenseStatus() {
+  try {
+    const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+
+    if (licenseState && licenseState.hasLicense && licenseState.licenseData) {
+      // Has active license
+      const licenseData = licenseState.licenseData;
+      const expiresAt = new Date(licenseData.expiresAt);
+
+      licenseInfo.innerHTML = `
+        <span class="license-text">License active until ${expiresAt.toLocaleDateString()}</span>
+      `;
+
+      // Show license management buttons, hide activation form
+      licenseActivation.style.display = 'none';
+      licenseActions.style.display = 'flex';
+      upgradeBtn.style.display = 'none';
+
+      proSection.setAttribute('data-has-license', 'true');
+    } else {
+      // No license
+      licenseInfo.innerHTML = `
+        <span class="license-text">No active license</span>
+      `;
+
+      // Show activation form, hide license management buttons
+      licenseActivation.style.display = 'block';
+      licenseActions.style.display = 'none';
+      upgradeBtn.style.display = 'block';
+
+      proSection.setAttribute('data-has-license', 'false');
+    }
+  } catch (error) {
+    console.error('Failed to update license status:', error);
+    licenseInfo.innerHTML = `
+      <span class="license-text">Error loading license status</span>
+    `;
+  }
+}
+
+async function activateLicense() {
+  const licenseKey = licenseKeyInput.value.trim();
+
+  if (!licenseKey) {
+    showLicenseError('Please enter a license key');
+    return;
+  }
+
+  // Validate license key format
+  if (!/^AP-\d{4}-[A-Z0-9]{6}$/.test(licenseKey)) {
+    showLicenseError('Invalid license key format. Expected: AP-YYYY-XXXXXX');
+    return;
+  }
+
+  try {
+    activateLicenseBtn.disabled = true;
+    activateLicenseBtn.textContent = 'Activating...';
+    clearLicenseMessages();
+
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+
+    if (result.ok) {
+      showLicenseSuccess('License activated successfully!');
+      licenseKeyInput.value = '';
+
+      // Update status after a short delay
+      setTimeout(() => {
+        updateLicenseStatus();
+        updatePlanBadge();
+      }, 1000);
+    } else {
+      showLicenseError(result.error || 'License activation failed');
+    }
+  } catch (error) {
+    console.error('License activation error:', error);
+    showLicenseError('Failed to activate license. Please try again.');
+  } finally {
+    activateLicenseBtn.disabled = false;
+    activateLicenseBtn.textContent = 'Activate';
+  }
+}
+
+async function deactivateLicense() {
+  if (!confirm('Are you sure you want to deactivate this license? This will downgrade your account to free.')) {
+    return;
+  }
+
+  try {
+    deactivateLicenseBtn.disabled = true;
+    deactivateLicenseBtn.textContent = 'Deactivating...';
+
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:deactivate'
+    });
+
+    if (result.ok) {
+      // Update status
+      updateLicenseStatus();
+      updatePlanBadge();
+    } else {
+      alert('Failed to deactivate license: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('License deactivation error:', error);
+    alert('Failed to deactivate license. Please try again.');
+  } finally {
+    deactivateLicenseBtn.disabled = false;
+    deactivateLicenseBtn.textContent = 'Deactivate';
+  }
+}
+
+async function manageLicense() {
+  try {
+    const result = await chrome.runtime.sendMessage({
+      action: 'license:info'
+    });
+
+    if (result.ok && result.data) {
+      const licenseData = result.data;
+      alert(`License Information:
+- Email: ${licenseData.license.email}
+- Plan: ${licenseData.license.plan}
+- Devices: ${licenseData.stats.activeDevices}/${licenseData.license.maxDevices}
+- Expires: ${new Date(licenseData.license.expiresAt).toLocaleDateString()}`);
+    } else {
+      alert('Failed to get license information');
+    }
+  } catch (error) {
+    console.error('License info error:', error);
+    alert('Failed to get license information');
+  }
+}
+
+function showLicenseError(message) {
+  licenseError.textContent = message;
+  licenseError.style.display = 'block';
+  licenseSuccess.style.display = 'none';
+}
+
+function showLicenseSuccess(message) {
+  licenseSuccess.textContent = message;
+  licenseSuccess.style.display = 'block';
+  licenseError.style.display = 'none';
+}
+
+function clearLicenseMessages() {
+  licenseError.style.display = 'none';
+  licenseSuccess.style.display = 'none';
+}
 
 // 全局测试函数
 window.testDebug = testDebug;

@@ -79,6 +79,10 @@ This extension is designed with privacy as the top priority:
 - ✅ **No Tracking**: No analytics or tracking of any kind
 - ✅ **Minimal Permissions**: Only requests necessary permissions for functionality
 
+📄 **Full Privacy Policy**:
+- [English](https://github.com/cengfanman/auto-purge/blob/main/PRIVACY_EN.md)
+- [中文](https://github.com/cengfanman/auto-purge/blob/main/PRIVACY.md)
+
 ## File Structure
 
 ```
@@ -162,6 +166,13 @@ npm run clean
 ## Support
 
 For issues, feature requests, or questions:
+
+- **Email**: ilovexuu2024@gmail.com
+- **Telegram**: https://t.me/autopurge_support
+- **Discord**: https://discord.gg/jsh8xK8Wzq
+- **GitHub Issues**: https://github.com/cengfanman/auto-purge/issues
+
+### Troubleshooting
 
 1. Check if the extension is enabled in Chrome settings
 2. Verify that you're visiting HTTP/HTTPS sites (not chrome:// pages)

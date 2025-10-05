@@ -70,9 +70,6 @@ let planBadge = null;
 let signInBtn = null;
 let signUpBtn = null;
 let upgradeBtn = null;
-let enabledToggle = null;
-let delayInput = null;
-let freeLimitInput = null;
 let presetDomainsList = null;
 let customDomainsList = null;
 let newDomainInput = null;
@@ -105,6 +102,13 @@ let verifyConfirmBtn = null;
 let createPasswordModal = null;
 let createPasswordInput = null;
 let createConfirmPasswordInput = null;
+
+// Unlock vault modal elements
+let unlockVaultModal = null;
+let unlockVaultPasswordInput = null;
+let unlockVaultError = null;
+let unlockVaultCancelBtn = null;
+let unlockVaultConfirmBtn = null;
 let createCancelBtn = null;
 let createConfirmBtn = null;
 
@@ -114,6 +118,12 @@ let deleteHistoryRecords = null;
 let deleteCancelBtn = null;
 let deleteConfirmBtn = null;
 
+// Email input modal elements
+let emailInputModal = null;
+let checkoutEmailInput = null;
+let emailCancelBtn = null;
+let emailConfirmBtn = null;
+let emailError = null;
 
 // History records elements
 let refreshHistoryBtn = null;
@@ -157,9 +167,6 @@ function getDOMElements() {
   signInBtn = document.getElementById('signInBtn');
   signUpBtn = document.getElementById('signUpBtn');
   upgradeBtn = document.getElementById('upgradeBtn');
-  enabledToggle = document.getElementById('enabledToggle');
-  delayInput = document.getElementById('delayInput');
-  freeLimitInput = document.getElementById('freeLimitInput');
   shadowHistoryToggle = document.getElementById('shadowHistoryToggle');
   analyticsToggle = document.getElementById('analyticsToggle');
   prioritySupportToggle = document.getElementById('prioritySupportToggle');
@@ -203,8 +210,35 @@ function getDOMElements() {
   deleteHistoryRecords = document.getElementById('deleteHistoryRecords');
   deleteCancelBtn = document.getElementById('deleteCancelBtn');
   deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
-  
-  
+
+  // Email input modal elements
+  emailInputModal = document.getElementById('emailInputModal');
+  checkoutEmailInput = document.getElementById('checkoutEmailInput');
+  emailCancelBtn = document.getElementById('emailCancelBtn');
+  emailConfirmBtn = document.getElementById('emailConfirmBtn');
+  emailError = document.getElementById('emailError');
+  console.log('Email modal elements initialized:', {
+    emailInputModal,
+    checkoutEmailInput,
+    emailCancelBtn,
+    emailConfirmBtn,
+    emailError
+  });
+
+  // Unlock vault modal elements
+  unlockVaultModal = document.getElementById('unlockVaultModal');
+  unlockVaultPasswordInput = document.getElementById('unlockVaultPasswordInput');
+  unlockVaultError = document.getElementById('unlockVaultError');
+  unlockVaultCancelBtn = document.getElementById('unlockVaultCancelBtn');
+  unlockVaultConfirmBtn = document.getElementById('unlockVaultConfirmBtn');
+  console.log('Unlock vault modal elements initialized:', {
+    unlockVaultModal,
+    unlockVaultPasswordInput,
+    unlockVaultError,
+    unlockVaultCancelBtn,
+    unlockVaultConfirmBtn
+  });
+
   // History records elements
   refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
   exportHistoryBtn = document.getElementById('exportHistoryBtn');
@@ -289,6 +323,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 强制显示默认内容
   forceShowContent();
   
+  // 自动锁定Vault（安全措施）
+  await autoLockVault();
+  
   // 加载数据
   await loadData();
   
@@ -301,6 +338,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 设置调试按钮的事件监听器
   setupDebugButtonListeners();
   
+  // 设置页面可见性监听器（安全措施）
+  setupVisibilityListener();
+  
+  // 初始化许可证管理
+  initializeLicenseManagement();
+  
   // 更新 UI
   updateUI();
   
@@ -311,18 +354,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 function forceShowContent() {
   console.log('Force showing content...');
   
-  // 确保默认显示 Overview 部分
-  const overviewSection = document.getElementById('overview');
-  if (overviewSection) {
-    overviewSection.classList.add('active');
-    overviewSection.style.display = 'block';
-    console.log('Overview section activated');
+  // 确保默认显示 Domains 部分
+  const domainsSection = document.getElementById('domains');
+  if (domainsSection) {
+    domainsSection.classList.add('active');
+    domainsSection.style.display = 'block';
+    console.log('Domains section activated');
   }
   
   // 确保其他部分隐藏
   const allSections = document.querySelectorAll('.content-section');
   allSections.forEach(section => {
-    if (section.id !== 'overview') {
+    if (section.id !== 'domains') {
       section.classList.remove('active');
       section.style.display = 'none';
     }
@@ -332,12 +375,57 @@ function forceShowContent() {
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
     item.classList.remove('active');
-    if (item.dataset.section === 'overview') {
+    if (item.dataset.section === 'domains') {
       item.classList.add('active');
     }
   });
   
   console.log('Content display forced');
+}
+
+// Auto lock vault on page load for security
+async function autoLockVault() {
+  try {
+    console.log('=== AUTO LOCKING VAULT FOR SECURITY ===');
+    
+    const stored = await chrome.storage.local.get([
+      'passwordProtectionEnabled', 
+      'passwordHash'
+    ]);
+    
+    // Only auto-lock if password protection is enabled
+    if (stored.passwordProtectionEnabled && stored.passwordHash) {
+      await chrome.storage.local.set({ vaultUnlocked: false });
+      console.log('✅ Vault auto-locked on page load (password protection enabled)');
+    } else {
+      console.log('ℹ️ No auto-lock needed (password protection disabled or no password set)');
+    }
+  } catch (error) {
+    console.error('Failed to auto-lock vault:', error);
+  }
+}
+
+// Setup visibility listener for additional security
+function setupVisibilityListener() {
+  try {
+    // Listen for page visibility changes
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden) {
+        console.log('Page hidden, auto-locking vault for security...');
+        await autoLockVault();
+      }
+    });
+    
+    // Also listen for page unload (when user closes tab)
+    window.addEventListener('beforeunload', async () => {
+      console.log('Page unloading, auto-locking vault for security...');
+      await autoLockVault();
+    });
+    
+    console.log('✅ Visibility listeners set up for vault security');
+  } catch (error) {
+    console.error('Failed to setup visibility listeners:', error);
+  }
 }
 
 // Load configuration and data
@@ -621,7 +709,7 @@ function setupDebugButtonListeners() {
   
   if (forceRefreshDomainsBtn) {
     forceRefreshDomainsBtn.addEventListener('click', () => {
-      forceRefreshDomains();
+      window.forceRefreshDomains();
     });
   }
   
@@ -649,10 +737,6 @@ function setupEventListeners() {
   if (signUpBtn) signUpBtn.addEventListener('click', showSignUpModal);
   if (upgradeBtn) upgradeBtn.addEventListener('click', showUpgradeModal);
   
-  // Settings toggles
-  if (enabledToggle) enabledToggle.addEventListener('change', updateConfig);
-  if (delayInput) delayInput.addEventListener('change', updateConfig);
-  if (freeLimitInput) freeLimitInput.addEventListener('change', updateConfig);
   
   // Pro feature toggles
   if (shadowHistoryToggle) shadowHistoryToggle.addEventListener('change', updateProFeatures);
@@ -736,7 +820,7 @@ function setupEventListeners() {
   // Delete password modal
   if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', hideDeletePasswordModal);
   if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', confirmDeletePassword);
-  
+
   // 点击模态框背景关闭
   if (deletePasswordModal) {
     deletePasswordModal.addEventListener('click', (e) => {
@@ -745,7 +829,51 @@ function setupEventListeners() {
       }
     });
   }
-  
+
+  // Email input modal
+  if (emailCancelBtn) emailCancelBtn.addEventListener('click', hideEmailInputModal);
+  if (emailConfirmBtn) emailConfirmBtn.addEventListener('click', confirmEmailInput);
+
+  // Allow Enter key to submit
+  if (checkoutEmailInput) {
+    checkoutEmailInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmEmailInput();
+      }
+    });
+  }
+
+  // Click modal background to close
+  if (emailInputModal) {
+    emailInputModal.addEventListener('click', (e) => {
+      if (e.target === emailInputModal) {
+        hideEmailInputModal();
+      }
+    });
+  }
+
+  // Unlock vault modal
+  if (unlockVaultCancelBtn) unlockVaultCancelBtn.addEventListener('click', hideUnlockVaultModal);
+  if (unlockVaultConfirmBtn) unlockVaultConfirmBtn.addEventListener('click', confirmUnlockVault);
+
+  // Allow Enter key to submit unlock vault
+  if (unlockVaultPasswordInput) {
+    unlockVaultPasswordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmUnlockVault();
+      }
+    });
+  }
+
+  // Click modal background to close unlock vault
+  if (unlockVaultModal) {
+    unlockVaultModal.addEventListener('click', (e) => {
+      if (e.target === unlockVaultModal) {
+        hideUnlockVaultModal();
+      }
+    });
+  }
+
   // History records
   if (refreshHistoryBtn) refreshHistoryBtn.addEventListener('click', refreshHistoryRecords);
   if (exportHistoryBtn) exportHistoryBtn.addEventListener('click', exportHistoryRecords);
@@ -770,10 +898,6 @@ function setupEventListeners() {
 function updateUI() {
   console.log('Updating UI...');
   
-  // Update toggles
-  if (enabledToggle) enabledToggle.checked = config.enabled;
-  if (delayInput) delayInput.value = config.delaySec;
-  if (freeLimitInput) freeLimitInput.value = config.freeLimit;
   
   // Update pro features
   if (shadowHistoryToggle) shadowHistoryToggle.checked = config.plan === 'pro' && config.shadowHistory;
@@ -848,17 +972,30 @@ function updateDomainLists() {
   if (presetDomainsList) {
     console.log('Preset domains list element found:', presetDomainsList);
     
-    // 只有当有预设域名时才清空并重新填充
-    if (presetDomains && presetDomains.length > 0) {
-      presetDomainsList.innerHTML = '';
-      presetDomains.forEach(domain => {
-        const domainItem = createDomainItem(domain, 'preset');
-        presetDomainsList.appendChild(domainItem);
-        console.log('Added preset domain:', domain);
-      });
-    } else {
-      console.log('No preset domains to display, keeping static content');
-    }
+    // Get removed preset domains
+    chrome.storage.local.get(['removedPresetDomains']).then(stored => {
+      const removedPresetDomains = stored.removedPresetDomains || [];
+      console.log('Removed preset domains:', removedPresetDomains);
+      
+      // Filter out removed preset domains
+      const filteredPresetDomains = presetDomains.filter(domain => 
+        !removedPresetDomains.includes(domain)
+      );
+      console.log('Filtered preset domains:', filteredPresetDomains);
+      
+      // 只有当有预设域名时才清空并重新填充
+      if (filteredPresetDomains && filteredPresetDomains.length > 0) {
+        presetDomainsList.innerHTML = '';
+        filteredPresetDomains.forEach(domain => {
+          const domainItem = createDomainItem(domain, 'preset');
+          presetDomainsList.appendChild(domainItem);
+          console.log('Added preset domain:', domain);
+        });
+      } else {
+        presetDomainsList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">All preset domains have been removed</p>';
+        console.log('No preset domains to display after filtering');
+      }
+    });
   } else {
     console.error('Preset domains list element not found!');
   }
@@ -896,13 +1033,18 @@ function createDomainItem(domain, type) {
   
   item.appendChild(domainName);
   
+  // Add remove button for both custom and preset domains
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-btn';
+  removeBtn.textContent = '×';
+  
   if (type === 'custom') {
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
     removeBtn.addEventListener('click', () => removeCustomDomain(domain));
-    item.appendChild(removeBtn);
+  } else if (type === 'preset') {
+    removeBtn.addEventListener('click', () => removePresetDomain(domain));
   }
+  
+  item.appendChild(removeBtn);
   
   return item;
 }
@@ -1000,23 +1142,53 @@ async function removeCustomDomain(domain) {
   }
 }
 
+// Remove preset domain
+async function removePresetDomain(domain) {
+  console.log('Removing preset domain:', domain);
+  
+  try {
+    // Get current removed preset domains
+    const stored = await chrome.storage.local.get(['removedPresetDomains']);
+    const removedPresetDomains = stored.removedPresetDomains || [];
+    
+    // Add domain to removed list if not already there
+    if (!removedPresetDomains.includes(domain)) {
+      removedPresetDomains.push(domain);
+      
+      // Save updated list
+      await chrome.storage.local.set({ removedPresetDomains });
+      
+      console.log('Preset domain removed, new removed list:', removedPresetDomains);
+      
+      // Notify background script to update removed preset domains
+      try {
+        await chrome.runtime.sendMessage({ action: 'updateRemovedPresetDomains' });
+        console.log('Background script notified of removed preset domains update');
+      } catch (error) {
+        console.warn('Failed to notify background script:', error);
+      }
+      
+      // Update UI
+      updateDomainLists();
+      
+      showSuccess(`Preset domain "${domain}" removed successfully`);
+    } else {
+      console.log('Preset domain already removed:', domain);
+      showError('Domain already removed');
+    }
+    
+  } catch (error) {
+    console.error('Failed to remove preset domain:', error);
+    showError('Failed to remove preset domain');
+  }
+}
+
 // Update configuration
 async function updateConfig() {
   try {
     const updates = {};
     
-    if (enabledToggle.checked !== config.enabled) {
-      updates.enabled = enabledToggle.checked;
-    }
-    
-    if (parseInt(delayInput.value) !== config.delaySec) {
-      updates.delaySec = parseInt(delayInput.value);
-    }
-    
-    if (parseInt(freeLimitInput.value) !== config.freeLimit) {
-      updates.freeLimit = parseInt(freeLimitInput.value);
-    }
-    
+    // No general settings to update anymore
     if (Object.keys(updates).length > 0) {
       await chrome.runtime.sendMessage({ 
         action: 'updateConfig', 
@@ -1289,12 +1461,6 @@ function showSignUpModal() {
   }
 }
 
-// Show upgrade modal
-function showUpgradeModal() {
-  // Redirect to payment section
-  document.querySelector('.payment-section').scrollIntoView({ behavior: 'smooth' });
-}
-
 // Show success message
 function showSuccess(message) {
   showMessage(message, 'success');
@@ -1496,138 +1662,6 @@ async function updatePasswordUI() {
   }
 }
 
-// 切换密码保护
-async function togglePasswordProtection() {
-  const enabled = passwordEnabledToggle.checked;
-  
-  if (enabled) {
-    // 启用密码保护 - 需要设置密码
-    const password = prompt('Enter a password to protect AutoPurge settings:');
-    if (!password) {
-      passwordEnabledToggle.checked = false;
-      return;
-    }
-    
-    if (password.length < 6) {
-      showError('Password must be at least 6 characters long');
-      passwordEnabledToggle.checked = false;
-      return;
-    }
-    
-    try {
-      const salt = generateSalt();
-      const hash = await hashPassword(password, salt);
-      
-      // 保存到 chrome.storage.local
-      await chrome.storage.local.set({
-        passwordHash: hash,
-        passwordSalt: salt,
-        passwordProtectionEnabled: true
-      });
-      
-      updatePasswordUI();
-      showMessage('Password protection enabled', 'success');
-      
-    } catch (error) {
-      console.error('Failed to enable password protection:', error);
-      showError('Failed to enable password protection');
-      passwordEnabledToggle.checked = false;
-    }
-  } else {
-    // 禁用密码保护 - 需要密码验证
-    await handleDisablePasswordProtection();
-  }
-}
-
-// 更新密码
-async function updatePassword() {
-  const currentPassword = currentPasswordInput.value;
-  const newPassword = newPasswordInput.value;
-  const confirmPassword = confirmPasswordInput.value;
-  
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    showError('Please fill in all password fields');
-    return;
-  }
-  
-  if (newPassword !== confirmPassword) {
-    showError('New passwords do not match');
-    return;
-  }
-  
-  if (newPassword.length < 6) {
-    showError('New password must be at least 6 characters long');
-    return;
-  }
-  
-  try {
-    // 验证当前密码
-    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
-    if (!isValid) {
-      showError('Current password is incorrect');
-      return;
-    }
-    
-    // 生成新的哈希
-    const salt = generateSalt();
-    const hash = await hashPassword(newPassword, salt);
-    
-    passwordConfig = {
-      enabled: true,
-      hash: hash,
-      salt: salt
-    };
-    
-    localStorage.setItem('autopurge_password', JSON.stringify(passwordConfig));
-    
-    // 清空输入框
-    currentPasswordInput.value = '';
-    newPasswordInput.value = '';
-    confirmPasswordInput.value = '';
-    
-    showSuccess('Password updated successfully');
-    
-  } catch (error) {
-    console.error('Failed to update password:', error);
-    showError('Failed to update password');
-  }
-}
-
-// 移除密码
-async function removePassword() {
-  const currentPassword = currentPasswordInput.value;
-  
-  if (!currentPassword) {
-    showError('Please enter current password to remove password protection');
-    return;
-  }
-  
-  try {
-    // 验证当前密码
-    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
-    if (!isValid) {
-      showError('Current password is incorrect');
-      return;
-    }
-    
-    passwordConfig = { enabled: false, hash: null, salt: null };
-    localStorage.removeItem('autopurge_password');
-    
-    // 清空输入框并更新 UI
-    currentPasswordInput.value = '';
-    newPasswordInput.value = '';
-    confirmPasswordInput.value = '';
-    passwordEnabledToggle.checked = false;
-    updatePasswordUI();
-    
-    showSuccess('Password protection removed');
-    
-  } catch (error) {
-    console.error('Failed to remove password:', error);
-    showError('Failed to remove password');
-  }
-}
-
 // ==================== 简化测试功能 ====================
 
 // 更新历史记录 UI
@@ -1693,122 +1727,17 @@ async function updateHistoryUI() {
     // 更新历史记录列表
     updateHistoryList(historyRecords);
     
+    // 检查license状态并更新overlay
+    const licenseResponse = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    const license = licenseResponse || { plan: 'free' };
+    await updateHistoryOverlay(license);
+    
     console.log('=== updateHistoryUI SUCCESS ===');
   } catch (error) {
     console.error('=== updateHistoryUI ERROR ===');
     console.error('Failed to update history UI:', error);
   }
 }
-
-// 更新历史记录列表
-function updateHistoryList(records) {
-  if (!historyList) return;
-  
-  if (records.length === 0) {
-    historyList.innerHTML = '<p style="text-align: center; color: #666;">No records found</p>';
-    return;
-  }
-  
-  const html = records.map(record => {
-    const date = new Date(record.deletedAt).toLocaleString();
-    return `
-      <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-weight: bold; color: #333;">${record.title || 'Untitled'}</div>
-          <div style="font-size: 12px; color: #666;">${record.url}</div>
-          <div style="font-size: 11px; color: #999;">${date}</div>
-        </div>
-        <div style="font-size: 12px; color: #666;">${record.domain}</div>
-      </div>
-    `;
-  }).join('');
-  
-  historyList.innerHTML = html;
-}
-
-// 刷新历史记录
-async function refreshHistoryRecords() {
-  console.log('Refreshing history records...');
-  await updateHistoryUI();
-  showMessage('History records refreshed', 'success');
-}
-
-// 导出历史记录
-async function exportHistoryRecords() {
-  try {
-    const stored = await chrome.storage.local.get(['historyRecords']);
-    const records = stored.historyRecords || [];
-    
-    const dataStr = JSON.stringify(records, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `autopurge-history-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
-    showMessage('History records exported', 'success');
-  } catch (error) {
-    console.error('Failed to export history records:', error);
-    showMessage('Failed to export history records', 'error');
-  }
-}
-
-// 清空历史记录
-async function clearHistoryRecords() {
-  if (confirm('Are you sure you want to clear all history records? This action cannot be undone.')) {
-    try {
-      await chrome.storage.local.set({ historyRecords: [] });
-      await updateHistoryUI();
-      showMessage('History records cleared', 'success');
-    } catch (error) {
-      console.error('Failed to clear history records:', error);
-      showMessage('Failed to clear history records', 'error');
-    }
-  }
-}
-
-// 过滤历史记录
-function filterHistoryRecords() {
-  if (!historyFilter) return;
-  
-  const filter = historyFilter.value;
-  console.log('Filtering history records by:', filter);
-  
-  // 这里可以添加过滤逻辑
-  updateHistoryUI();
-}
-
-// 搜索历史记录
-function searchHistoryRecords() {
-  if (!historySearch) return;
-  
-  const query = historySearch.value.toLowerCase();
-  console.log('Searching history records for:', query);
-  
-  // 这里可以添加搜索逻辑
-  updateHistoryUI();
-}
-
-// 更新历史记录设置
-async function updateHistorySettings() {
-  try {
-    const settings = {
-      autoRecord: autoRecordToggle ? autoRecordToggle.checked : true,
-      maxRecords: maxRecordsInput ? parseInt(maxRecordsInput.value) : 1000,
-      retentionDays: retentionDaysInput ? parseInt(retentionDaysInput.value) : 30
-    };
-    
-    await chrome.storage.local.set({ historySettings: settings });
-    showMessage('History settings updated', 'success');
-  } catch (error) {
-    console.error('Failed to update history settings:', error);
-    showMessage('Failed to update history settings', 'error');
-  }
-}
-
 // ==================== 密码保护功能 ====================
 
 // 切换密码保护
@@ -1855,11 +1784,17 @@ async function togglePasswordProtection() {
 // 启用密码保护
 async function enablePasswordProtection() {
   try {
-    // 保存密码保护状态
-    await chrome.storage.local.set({ passwordProtectionEnabled: true });
+    // 保存密码保护状态并锁定Vault
+    await chrome.storage.local.set({ 
+      passwordProtectionEnabled: true,
+      vaultUnlocked: false  // 启用密码保护时自动锁定Vault
+    });
     
     // 更新UI状态
     await updatePasswordUI();
+    
+    // 更新History Records显示
+    await updateHistoryUI();
     
     showMessage('Password protection enabled', 'success');
   } catch (error) {
@@ -1872,11 +1807,17 @@ async function enablePasswordProtection() {
 // 禁用密码保护
 async function disablePasswordProtection() {
   try {
-    // 保存密码保护状态
-    await chrome.storage.local.set({ passwordProtectionEnabled: false });
+    // 保存密码保护状态并解锁Vault
+    await chrome.storage.local.set({ 
+      passwordProtectionEnabled: false,
+      vaultUnlocked: true  // 禁用密码保护时自动解锁Vault
+    });
     
     // 更新UI状态
     await updatePasswordUI();
+    
+    // 更新History Records显示
+    await updateHistoryUI();
     
     showMessage('Password protection disabled', 'success');
   } catch (error) {
@@ -2386,19 +2327,22 @@ function filterHistoryRecords() {
   let filteredRecords = [...historyRecords];
   
   switch (filter) {
-    case 'today':
+    case 'today': {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= today.getTime());
       break;
-    case 'week':
+    }
+    case 'week': {
       const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= weekAgo);
       break;
-    case 'month':
+    }
+    case 'month': {
       const monthAgo = now - (30 * 24 * 60 * 60 * 1000);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= monthAgo);
       break;
+    }
   }
   
   // 更新显示
@@ -2614,6 +2558,1145 @@ async function reloadPresetDomains() {
 window.viewHistoryRecord = viewHistoryRecord;
 window.deleteHistoryRecord = deleteHistoryRecord;
 window.addHistoryRecord = addHistoryRecord;
+
+// ============ LICENSE MANAGEMENT FUNCTIONALITY ============
+
+// License management DOM elements
+let currentPlanBadge = null;
+let currentPlanStatus = null;
+let licenseInfo = null;
+let licenseCode = null;
+let manageLicenseBtn = null;
+let buyCoinbaseBtn = null;
+let buyPaypalBtn = null;
+let licenseKeyInput = null;
+let activateLicenseBtn = null;
+let pasteLicenseBtn = null;
+let licenseMessage = null;
+
+// Billing cycle elements
+let monthlyPlanBtn = null;
+let yearlyPlanBtn = null;
+let planPrice = null;
+let planDescription = null;
+let selectedBillingCycle = 'yearly'; // Default to yearly
+
+// History overlay elements
+let historyOverlay = null;
+let historyOverlayTitle = null;
+let historyOverlayDescription = null;
+let historyBuyCoinbase = null;
+let historyLicenseInput = null;
+let historyActivateLicense = null;
+
+// Initialize license management functionality
+function initializeLicenseManagement() {
+  console.log('Initializing license management...');
+  
+  // Get DOM elements
+  currentPlanBadge = document.getElementById('current-plan-badge');
+  currentPlanStatus = document.getElementById('current-plan-status');
+  licenseInfo = document.getElementById('license-info');
+  licenseCode = document.getElementById('license-code');
+  manageLicenseBtn = document.getElementById('manage-license-btn');
+  buyCoinbaseBtn = document.getElementById('buy-coinbase-btn');
+  buyPaypalBtn = document.getElementById('buy-paypal-btn');
+  licenseKeyInput = document.getElementById('license-key-input');
+  activateLicenseBtn = document.getElementById('activate-license-btn');
+  pasteLicenseBtn = document.getElementById('paste-license-btn');
+  licenseMessage = document.getElementById('license-message');
+
+  // Get billing cycle elements
+  monthlyPlanBtn = document.getElementById('monthly-plan-btn');
+  yearlyPlanBtn = document.getElementById('yearly-plan-btn');
+  planPrice = document.getElementById('plan-price');
+  planDescription = document.getElementById('plan-description');
+
+  // Get history overlay elements
+  historyOverlay = document.getElementById('historyOverlay');
+  historyOverlayTitle = document.getElementById('historyOverlayTitle');
+  historyOverlayDescription = document.getElementById('historyOverlayDescription');
+  historyBuyCoinbase = document.getElementById('history-buy-coinbase');
+  historyLicenseInput = document.getElementById('history-license-input');
+  historyActivateLicense = document.getElementById('history-activate-license');
+  
+  // Set up billing cycle toggle
+  if (monthlyPlanBtn) {
+    monthlyPlanBtn.addEventListener('click', () => switchBillingCycle('monthly'));
+  }
+
+  if (yearlyPlanBtn) {
+    yearlyPlanBtn.addEventListener('click', () => switchBillingCycle('yearly'));
+  }
+
+  // Set up event listeners
+  if (buyCoinbaseBtn) {
+    buyCoinbaseBtn.addEventListener('click', handleCoinbasePurchase);
+  }
+
+  if (buyPaypalBtn) {
+    buyPaypalBtn.addEventListener('click', handlePaypalPurchase);
+  }
+  
+  if (activateLicenseBtn) {
+    activateLicenseBtn.addEventListener('click', handleLicenseActivation);
+  }
+  
+  if (pasteLicenseBtn) {
+    pasteLicenseBtn.addEventListener('click', handlePasteLicense);
+  }
+  
+  if (manageLicenseBtn) {
+    manageLicenseBtn.addEventListener('click', handleManageLicense);
+  }
+  
+  // Set up history overlay event listeners
+  if (historyBuyCoinbase) {
+    historyBuyCoinbase.addEventListener('click', () => {
+      // Navigate to subscription page instead of direct purchase
+      const subscriptionNav = document.querySelector('[data-section="subscription"]');
+      if (subscriptionNav) {
+        subscriptionNav.click();
+        // Scroll to the pricing section
+        setTimeout(() => {
+          const pricingSection = document.querySelector('.ap-pricing-section');
+          if (pricingSection) {
+            pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+    });
+  }
+  
+  if (historyActivateLicense) {
+    historyActivateLicense.addEventListener('click', handleHistoryLicenseActivation);
+  }
+  
+  // Listen for license changes from background
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'license:changed') {
+      updateLicenseUI();
+    }
+  });
+  
+  // Initial UI update
+  updateLicenseUI();
+}
+
+// Update license UI based on current state
+async function updateLicenseUI() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    const license = response || { plan: 'free' };
+    // Update plan badge
+    if (currentPlanBadge) {
+      currentPlanBadge.className = 'ap-badge';
+      currentPlanBadge.textContent = 'Free';
+
+      if (license.plan === 'pro') {
+        currentPlanBadge.classList.add('ap-badge--pro');
+        currentPlanBadge.textContent = 'Pro';
+      } else if (license.plan === 'pro_trial') {
+        currentPlanBadge.classList.add('ap-badge--trial');
+        currentPlanBadge.textContent = 'Trial';
+      } else {
+        currentPlanBadge.classList.add('ap-badge--free');
+      }
+    }
+
+    // Update plan status
+    if (currentPlanStatus) {
+      if (license.plan === 'free') {
+        currentPlanStatus.textContent = 'Basic features';
+      } else {
+        const licenseData = license.licenseData || {};
+        console.log('🔍 licenseData:', licenseData);
+        console.log('🔍 licenseData.billingCycle:', licenseData.billingCycle);
+
+        const expiry = licenseData.expiresAt ? new Date(licenseData.expiresAt) : null;
+        const billingCycle = (licenseData.billingCycle || 'YEARLY').toUpperCase();
+        const planType = billingCycle === 'MONTHLY' ? 'Monthly' : 'Yearly';
+
+        console.log('🔍 billingCycle (after uppercase):', billingCycle);
+        console.log('🔍 planType:', planType);
+
+        if (expiry) {
+          const now = new Date();
+          const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+          console.log('🔍 daysLeft:', daysLeft);
+
+          if (daysLeft > 0) {
+            currentPlanStatus.textContent = `Premium features (${planType}) • ${daysLeft} days left`;
+          } else {
+            currentPlanStatus.textContent = `Premium features (${planType}) • Expired`;
+          }
+        } else {
+          currentPlanStatus.textContent = `Premium features (${planType})`;
+        }
+      }
+    }
+    
+    // Update license info
+    if (licenseInfo && licenseCode) {
+      const licenseData = license.licenseData || {};
+      if (licenseData.licenseKey && license.plan !== 'free') {
+        licenseInfo.style.display = 'block';
+        // Mask license key (show first 8 chars + ***)
+        const maskedKey = licenseData.licenseKey.substring(0, 8) + '***';
+        licenseCode.textContent = maskedKey;
+      } else {
+        licenseInfo.style.display = 'none';
+      }
+    }
+    
+    // Update manage button
+    if (manageLicenseBtn) {
+      if (license.plan !== 'free') {
+        manageLicenseBtn.style.display = 'inline-block';
+      } else {
+        manageLicenseBtn.style.display = 'none';
+      }
+    }
+    
+    // Update history overlay
+    updateHistoryOverlay(license);
+    
+  } catch (error) {
+    console.error('Failed to update license UI:', error);
+  }
+}
+
+// Email input modal promise resolver
+let emailInputResolver = null;
+
+// Show email input modal
+function showEmailInputModal() {
+  console.log('showEmailInputModal called');
+  console.log('emailInputModal:', emailInputModal);
+
+  return new Promise((resolve, reject) => {
+    emailInputResolver = { resolve, reject };
+
+    if (emailInputModal) {
+      console.log('Showing email modal');
+      emailInputModal.style.display = 'flex';
+      if (checkoutEmailInput) {
+        checkoutEmailInput.focus();
+        checkoutEmailInput.value = '';
+      }
+      if (emailError) {
+        emailError.style.display = 'none';
+      }
+    } else {
+      console.error('emailInputModal element not found!');
+      reject(new Error('Email modal not found'));
+    }
+  });
+}
+
+// Hide email input modal
+function hideEmailInputModal() {
+  if (emailInputModal) {
+    emailInputModal.style.display = 'none';
+    if (checkoutEmailInput) {
+      checkoutEmailInput.value = '';
+    }
+    if (emailError) {
+      emailError.style.display = 'none';
+    }
+  }
+
+  // Reject the promise if user cancels
+  if (emailInputResolver) {
+    emailInputResolver.reject(new Error('User cancelled email input'));
+    emailInputResolver = null;
+  }
+}
+
+// Validate email format
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Confirm email input
+function confirmEmailInput() {
+  if (!checkoutEmailInput) {
+    return;
+  }
+
+  const email = checkoutEmailInput.value.trim();
+
+  if (!email) {
+    if (emailError) {
+      emailError.textContent = 'Please enter an email address';
+      emailError.style.display = 'block';
+    }
+    return;
+  }
+
+  if (!validateEmail(email)) {
+    if (emailError) {
+      emailError.textContent = 'Please enter a valid email address';
+      emailError.style.display = 'block';
+    }
+    return;
+  }
+
+  // Email is valid, resolve the promise
+  if (emailInputResolver) {
+    emailInputResolver.resolve(email);
+    emailInputResolver = null;
+  }
+
+  // Hide the modal
+  if (emailInputModal) {
+    emailInputModal.style.display = 'none';
+    if (checkoutEmailInput) {
+      checkoutEmailInput.value = '';
+    }
+    if (emailError) {
+      emailError.style.display = 'none';
+    }
+  }
+}
+
+// Switch billing cycle (monthly/yearly)
+function switchBillingCycle(cycle) {
+  selectedBillingCycle = cycle;
+
+  // Update button states
+  if (monthlyPlanBtn && yearlyPlanBtn) {
+    monthlyPlanBtn.classList.toggle('billing-toggle-btn--active', cycle === 'monthly');
+    yearlyPlanBtn.classList.toggle('billing-toggle-btn--active', cycle === 'yearly');
+  }
+
+  // Update price and description
+  if (planPrice && planDescription) {
+    if (cycle === 'monthly') {
+      planPrice.innerHTML = '$4.99<span style="font-size: 16px;">/month</span>';
+      planDescription.textContent = 'Billed monthly, cancel anytime';
+    } else {
+      planPrice.innerHTML = '$49<span style="font-size: 16px;">/year</span>';
+      planDescription.textContent = 'Save 18% compared to monthly';
+    }
+  }
+}
+
+// Get product code based on selected billing cycle
+function getSelectedProductCode() {
+  // 使用测试产品（$0.01）便于测试
+  // return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly_test' : 'autopurge_pro_yearly_test';
+
+  // 正式环境使用：
+  return selectedBillingCycle === 'monthly' ? 'autopurge_pro_monthly' : 'autopurge_pro_yearly';
+}
+
+// Handle Coinbase purchase
+async function handleCoinbasePurchase() {
+  console.log('handleCoinbasePurchase called');
+  try {
+    // Show email input modal and wait for user input
+    const email = await showEmailInputModal();
+    console.log('Email received:', email);
+
+    showLicenseMessage('Opening Coinbase checkout...', 'info');
+
+    const response = await chrome.runtime.sendMessage({
+      action: 'checkout:create',
+      provider: 'coinbase',
+      productCode: getSelectedProductCode(),
+      email: email
+    });
+
+    if (response && response.ok) {
+      if (response.tabError) {
+        // Tab creation failed, provide manual link
+        showLicenseMessage(
+          `Checkout created! If the page didn't open automatically, <a href="${response.hosted_url}" target="_blank">click here to open Coinbase checkout</a>. Complete your purchase and return here to activate your license.`,
+          'warning'
+        );
+      } else {
+        showLicenseMessage('Redirected to Coinbase Commerce. Complete your purchase and return here to activate your license.', 'success');
+      }
+    } else {
+      throw new Error(response?.error || 'Checkout failed');
+    }
+  } catch (error) {
+    console.error('Coinbase purchase failed:', error);
+    // Don't show error if user cancelled email input
+    if (error.message !== 'User cancelled email input') {
+      showLicenseMessage('Failed to open checkout. Please try again.', 'error');
+    }
+  }
+}
+
+// Handle PayPal purchase (disabled for now)
+function handlePaypalPurchase() {
+  showLicenseMessage('PayPal integration coming soon!', 'info');
+}
+
+// Handle license activation
+async function handleLicenseActivation() {
+  const licenseKey = licenseKeyInput?.value?.trim();
+  
+  if (!licenseKey) {
+    showLicenseMessage('Please enter a license key', 'error');
+    return;
+  }
+  
+  try {
+    // Show loading state
+    if (activateLicenseBtn) {
+      activateLicenseBtn.textContent = 'Activating...';
+      activateLicenseBtn.disabled = true;
+    }
+    
+    showLicenseMessage('Activating license...', 'info');
+    
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+    
+    if (response && response.ok) {
+      // 显示激活成功消息，包含有效期信息
+      let message = 'License activated successfully! Welcome to AutoPurge Pro!';
+      if (response.data && response.data.expiresAt) {
+        const expiryDate = new Date(response.data.expiresAt);
+        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        const billingCycle = (response.data.billingCycle || 'YEARLY').toUpperCase();
+        const planType = billingCycle === 'MONTHLY' ? 'Monthly' : 'Yearly';
+        message = `🎉 License activated! AutoPurge Pro ${planType} - Valid for ${daysLeft} days (expires ${expiryDate.toLocaleDateString('en-US')})`;
+      }
+      showLicenseMessage(message, 'success');
+      licenseKeyInput.value = '';
+      updateLicenseUI();
+    } else {
+      throw new Error(response?.error || 'Activation failed');
+    }
+    
+  } catch (error) {
+    console.error('License activation failed:', error);
+    showLicenseMessage(error.message, 'error');
+  } finally {
+    // Reset button state
+    if (activateLicenseBtn) {
+      activateLicenseBtn.textContent = 'Activate License';
+      activateLicenseBtn.disabled = false;
+    }
+  }
+}
+
+// Handle paste license key
+async function handlePasteLicense() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (licenseKeyInput && text.trim()) {
+      licenseKeyInput.value = text.trim();
+      showLicenseMessage('License key pasted from clipboard', 'success');
+    } else {
+      showLicenseMessage('No license key found in clipboard', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to paste from clipboard:', error);
+    showLicenseMessage('Failed to paste from clipboard. Please paste manually.', 'error');
+  }
+}
+
+// Handle manage license
+async function handleManageLicense() {
+  try {
+    showLicenseMessage('Loading license information...', 'info');
+    
+    // Get current license from storage
+    const stored = await chrome.storage.local.get(['license']);
+    if (!stored.license || !stored.license.licCodeMasked) {
+      showLicenseMessage('No license found. Please activate a license first.', 'error');
+      return;
+    }
+    
+    // Get full license key from user
+    const licenseKey = prompt('Please enter your full license key to manage devices:');
+    if (!licenseKey || !licenseKey.trim()) {
+      showLicenseMessage('License key is required for device management.', 'error');
+      return;
+    }
+    
+    // Get license management data
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:manage',
+      licenseKey: licenseKey.trim()
+    });
+    
+    if (response && response.ok) {
+      showLicenseManagementModal(response.data, licenseKey.trim());
+    } else {
+      throw new Error(response?.error || 'Failed to load license information');
+    }
+  } catch (error) {
+    console.error('License management failed:', error);
+    showLicenseMessage('Failed to load license information. Please check your license key.', 'error');
+  }
+}
+
+// Show license management modal
+function showLicenseManagementModal(licenseData, licenseKey) {
+  // Remove existing modal if present
+  const existingModal = document.getElementById('license-management-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const { license, devices, stats } = licenseData;
+  
+  // Format dates
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString();
+  };
+  
+  // Generate device list HTML
+  const deviceListHTML = devices.map(device => `
+    <div class="device-item ${device.status === 'active' ? 'active' : 'inactive'}">
+      <div class="device-info">
+        <div class="device-id">
+          <strong>Device ID:</strong> ${device.deviceId}
+        </div>
+        <div class="device-agent">
+          <strong>Browser:</strong> ${device.userAgent}
+        </div>
+        <div class="device-activated">
+          <strong>Activated:</strong> ${formatDate(device.activatedAt)}
+        </div>
+        ${device.status === 'inactive' ? `
+          <div class="device-deactivated">
+            <strong>Deactivated:</strong> ${formatDate(device.deactivatedAt)}
+          </div>
+        ` : ''}
+      </div>
+      ${device.status === 'active' ? `
+        <div class="device-actions">
+          <button class="btn-danger device-deactivate-btn" data-device-id="${device.deviceId}">
+            Deactivate
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+  
+  const modalHTML = `
+    <div id="license-management-modal" class="upgrade-modal" style="display: flex; z-index: 10000;">
+      <div class="upgrade-modal__content" style="max-width: 700px; width: 90vw;">
+        <button class="modal-close" id="license-modal-close">&times;</button>
+        
+        <h3>License Management</h3>
+        
+        <div class="license-overview">
+          <div class="license-detail">
+            <strong>License:</strong> ${license.code}
+          </div>
+          <div class="license-detail">
+            <strong>Plan:</strong> ${license.plan.toUpperCase()}
+          </div>
+          <div class="license-detail">
+            <strong>Email:</strong> ${license.email || 'N/A'}
+          </div>
+          <div class="license-detail">
+            <strong>Status:</strong> <span class="status-${license.status}">${license.status.toUpperCase()}</span>
+          </div>
+          <div class="license-detail">
+            <strong>Expires:</strong> ${formatDate(license.expiresAt)}
+          </div>
+        </div>
+        
+        <div class="device-stats">
+          <div class="stat-item">
+            <span class="stat-number">${stats.activeDevices}</span>
+            <span class="stat-label">Active Devices</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${stats.availableSlots}</span>
+            <span class="stat-label">Available Slots</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${license.maxDevices}</span>
+            <span class="stat-label">Total Slots</span>
+          </div>
+        </div>
+        
+        <h4>Device List</h4>
+        <div class="device-list">
+          ${deviceListHTML || '<p>No devices found.</p>'}
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-secondary" id="license-refresh-btn">Refresh</button>
+          <button class="btn-primary" id="license-modal-ok">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to document
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Get modal elements
+  const modal = document.getElementById('license-management-modal');
+  const closeBtn = document.getElementById('license-modal-close');
+  const okBtn = document.getElementById('license-modal-ok');
+  const refreshBtn = document.getElementById('license-refresh-btn');
+  const deactivateBtns = modal.querySelectorAll('.device-deactivate-btn');
+  
+  // Set up event listeners
+  const closeModal = () => {
+    modal.remove();
+    showLicenseMessage('', 'info'); // Clear message
+  };
+  
+  closeBtn?.addEventListener('click', closeModal);
+  okBtn?.addEventListener('click', closeModal);
+  
+  refreshBtn?.addEventListener('click', async () => {
+    modal.remove();
+    await handleManageLicense();
+  });
+  
+  // Set up deactivate buttons
+  deactivateBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const deviceId = btn.dataset.deviceId;
+      if (confirm('Are you sure you want to deactivate this device? This action cannot be undone.')) {
+        try {
+          btn.textContent = 'Deactivating...';
+          btn.disabled = true;
+          
+          const response = await chrome.runtime.sendMessage({
+            action: 'license:deactivateDevice',
+            licenseKey: licenseKey,
+            deviceId: deviceId
+          });
+          
+          if (response && response.ok) {
+            // Refresh the modal
+            modal.remove();
+            await handleManageLicense();
+          } else {
+            throw new Error(response?.error || 'Failed to deactivate device');
+          }
+        } catch (error) {
+          console.error('Device deactivation failed:', error);
+          btn.textContent = 'Deactivate';
+          btn.disabled = false;
+          alert('Failed to deactivate device: ' + error.message);
+        }
+      }
+    });
+  });
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+}
+
+// Handle history license activation
+async function handleHistoryLicenseActivation() {
+  const licenseKey = historyLicenseInput?.value?.trim();
+  
+  if (!licenseKey) {
+    alert('Please enter a license key');
+    return;
+  }
+  
+  try {
+    // Show loading state
+    if (historyActivateLicense) {
+      historyActivateLicense.textContent = 'Activating...';
+      historyActivateLicense.disabled = true;
+    }
+    
+    const response = await chrome.runtime.sendMessage({
+      action: 'license:activate',
+      licenseKey: licenseKey
+    });
+    
+    if (response && response.ok) {
+      // 显示激活成功消息，包含有效期信息
+      let message = 'License activated successfully!';
+      if (response.data && response.data.expiresAt) {
+        const expiryDate = new Date(response.data.expiresAt);
+        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        const billingCycle = response.data.billingCycle || 'yearly';
+        const planType = billingCycle === 'monthly' ? 'Monthly' : 'Yearly';
+        message = `🎉 License activated! AutoPurge Pro ${planType} - Valid for ${daysLeft} days (expires ${expiryDate.toLocaleDateString()})`;
+      }
+      alert(message);
+      historyLicenseInput.value = '';
+      updateLicenseUI();
+    } else {
+      throw new Error(response?.error || 'Activation failed');
+    }
+    
+  } catch (error) {
+    console.error('History license activation failed:', error);
+    alert(error.message);
+  } finally {
+    // Reset button state
+    if (historyActivateLicense) {
+      historyActivateLicense.textContent = 'Activate';
+      historyActivateLicense.disabled = false;
+    }
+  }
+}
+
+// Update history overlay based on license state
+async function updateHistoryOverlay(license) {
+  if (!historyOverlay) return;
+  
+  const historyList = document.getElementById('historyList');
+  
+  try {
+    if (license.plan === 'free') {
+      // Show overlay for free users
+      if (historyList) {
+        historyList.classList.add('ap-blur');
+      }
+      
+      if (historyOverlayTitle) {
+        historyOverlayTitle.textContent = 'History Records is a Pro feature';
+      }
+      
+      if (historyOverlayDescription) {
+        historyOverlayDescription.textContent = 'Unlock encrypted Shadow Vault to view and restore records.';
+      }
+      
+      historyOverlay.style.display = 'flex';
+      
+    } else {
+      // Check if password/vault is locked for Pro users
+      const isVaultUnlocked = await checkVaultStatus();
+      
+      if (!isVaultUnlocked && (license.plan === 'pro' || license.plan === 'pro_trial')) {
+        // Show unlock prompt for Pro users with locked vault
+        if (historyList) {
+          historyList.classList.add('ap-blur');
+        }
+        
+        if (historyOverlayTitle) {
+          historyOverlayTitle.textContent = 'Vault is locked';
+        }
+
+        if (historyOverlayDescription) {
+          // Clear existing content
+          historyOverlayDescription.innerHTML = '';
+
+          // Create unlock button
+          const unlockBtn = document.createElement('button');
+          unlockBtn.className = 'btn btn-primary';
+          unlockBtn.innerHTML = '🔓 Unlock Vault';
+          unlockBtn.style.cursor = 'pointer';
+
+          // Add click event listener
+          unlockBtn.addEventListener('click', async () => {
+            console.log('=== Unlock Vault button clicked ===');
+            try {
+              await unlockVault();
+            } catch (error) {
+              console.error('Error calling unlockVault:', error);
+            }
+          });
+
+          historyOverlayDescription.appendChild(unlockBtn);
+
+          console.log('Unlock Vault button created and event listener attached');
+        }
+
+        // Hide Coinbase/License form for locked vault
+        const licenseForm = historyOverlay.querySelector('.ap-license-form');
+        const coinbaseBtn = historyOverlay.querySelector('.btn-coinbase');
+        if (licenseForm) licenseForm.style.display = 'none';
+        if (coinbaseBtn) coinbaseBtn.style.display = 'none';
+
+        historyOverlay.style.display = 'flex';
+        
+      } else {
+        // Hide overlay for unlocked Pro users
+        if (historyList) {
+          historyList.classList.remove('ap-blur');
+        }
+        
+        historyOverlay.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update history overlay:', error);
+    
+    // On error, assume free plan behavior
+    if (historyList) {
+      historyList.classList.add('ap-blur');
+    }
+    historyOverlay.style.display = 'flex';
+  }
+}
+
+// Check vault/password status
+async function checkVaultStatus() {
+  try {
+    // Check if password protection is enabled and vault is unlocked
+    const stored = await chrome.storage.local.get(['passwordProtectionEnabled', 'vaultUnlocked']);
+    
+    if (!stored.passwordProtectionEnabled) {
+      // No password protection, vault is "unlocked"
+      return true;
+    }
+    
+    // Check if vault is currently unlocked
+    return stored.vaultUnlocked === true;
+  } catch (error) {
+    console.error('Failed to check vault status:', error);
+    return false;
+  }
+}
+
+// Unlock vault function
+async function unlockVault() {
+  console.log('=== unlockVault function called ===');
+
+  try {
+    // Check if password protection is enabled
+    console.log('Checking password protection status...');
+    const stored = await chrome.storage.local.get(['passwordHash', 'passwordProtectionEnabled']);
+    console.log('Password protection status:', {
+      hasPasswordHash: !!stored.passwordHash,
+      isProtectionEnabled: stored.passwordProtectionEnabled
+    });
+
+    if (!stored.passwordHash || !stored.passwordProtectionEnabled) {
+      // No password set, just unlock directly
+      console.log('No password set, unlocking directly...');
+      await chrome.storage.local.set({ vaultUnlocked: true });
+
+      // Get current license state
+      const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+      console.log('License state after direct unlock:', licenseState);
+
+      // Update overlay to hide it
+      if (typeof updateHistoryOverlay === 'function') {
+        await updateHistoryOverlay(licenseState);
+      }
+
+      console.log('Vault unlocked, refreshing history...');
+      await refreshHistoryRecords();
+      console.log('History refreshed');
+      return;
+    }
+
+    // Show unlock modal
+    console.log('Password is set, showing unlock modal...');
+    showUnlockVaultModal();
+    console.log('Unlock modal shown');
+
+  } catch (error) {
+    console.error('=== Error in unlockVault ===', error);
+    alert('Failed to unlock vault. Please try again.');
+  }
+}
+
+// Make unlockVault available globally for onclick handler
+window.unlockVault = unlockVault;
+
+// Show unlock vault modal
+function showUnlockVaultModal() {
+  console.log('=== showUnlockVaultModal called ===');
+  console.log('unlockVaultModal element:', unlockVaultModal);
+
+  if (!unlockVaultModal) {
+    console.error('unlockVaultModal element not found!');
+    return;
+  }
+
+  console.log('Setting modal display to flex...');
+  unlockVaultModal.style.display = 'flex';
+
+  if (unlockVaultPasswordInput) {
+    console.log('Clearing and focusing password input...');
+    unlockVaultPasswordInput.value = '';
+    unlockVaultPasswordInput.focus();
+  } else {
+    console.error('unlockVaultPasswordInput not found!');
+  }
+
+  if (unlockVaultError) {
+    unlockVaultError.style.display = 'none';
+  }
+
+  console.log('Modal should now be visible');
+}
+
+// Hide unlock vault modal
+function hideUnlockVaultModal() {
+  if (!unlockVaultModal) return;
+
+  unlockVaultModal.style.display = 'none';
+
+  if (unlockVaultPasswordInput) {
+    unlockVaultPasswordInput.value = '';
+  }
+
+  if (unlockVaultError) {
+    unlockVaultError.style.display = 'none';
+  }
+}
+
+// Confirm unlock vault
+async function confirmUnlockVault() {
+  if (!unlockVaultPasswordInput) return;
+
+  const password = unlockVaultPasswordInput.value.trim();
+
+  if (!password) {
+    if (unlockVaultError) {
+      unlockVaultError.textContent = 'Please enter a password';
+      unlockVaultError.style.display = 'block';
+    }
+    return;
+  }
+
+  try {
+    // Get stored password hash
+    const stored = await chrome.storage.local.get(['passwordHash']);
+
+    if (!stored.passwordHash) {
+      if (unlockVaultError) {
+        unlockVaultError.textContent = 'No password is set';
+        unlockVaultError.style.display = 'block';
+      }
+      return;
+    }
+
+    // Verify password (using simple btoa for now, same as password creation)
+    const passwordHash = btoa(password);
+
+    if (passwordHash !== stored.passwordHash) {
+      if (unlockVaultError) {
+        unlockVaultError.textContent = 'Incorrect password';
+        unlockVaultError.style.display = 'block';
+      }
+      // Clear input
+      unlockVaultPasswordInput.value = '';
+      unlockVaultPasswordInput.focus();
+      return;
+    }
+
+    // Password correct! Unlock vault
+    await chrome.storage.local.set({ vaultUnlocked: true });
+
+    // Hide modal
+    hideUnlockVaultModal();
+
+    // Get current license state
+    const licenseState = await chrome.runtime.sendMessage({ action: 'license:getState' });
+    console.log('License state after unlock:', licenseState);
+
+    // Update overlay to hide it
+    if (typeof updateHistoryOverlay === 'function') {
+      await updateHistoryOverlay(licenseState);
+    }
+
+    // Refresh history records to show unlocked content
+    await refreshHistoryRecords();
+
+    console.log('Vault unlocked successfully');
+
+  } catch (error) {
+    console.error('Error confirming unlock vault:', error);
+    if (unlockVaultError) {
+      unlockVaultError.textContent = 'Failed to unlock. Please try again.';
+      unlockVaultError.style.display = 'block';
+    }
+  }
+}
+
+// Show license message
+function showLicenseMessage(message, type = 'info') {
+  if (!licenseMessage) return;
+  
+  licenseMessage.className = `ap-alert ap-alert--${type}`;
+  licenseMessage.textContent = message;
+  licenseMessage.style.display = 'block';
+  
+  // Auto-hide success/info messages after 5 seconds
+  if (type === 'success' || type === 'info') {
+    setTimeout(() => {
+      if (licenseMessage) {
+        licenseMessage.style.display = 'none';
+      }
+    }, 5000);
+  }
+}
+
+// Utility function to normalize timestamps
+function toEpochMs(maybeNumberOrISO) {
+  if (typeof maybeNumberOrISO === "number") {
+    return maybeNumberOrISO < 1e12 ? maybeNumberOrISO * 1000 : maybeNumberOrISO;
+  }
+  if (typeof maybeNumberOrISO === "string") {
+    return Date.parse(maybeNumberOrISO);
+  }
+  return undefined;
+}
+
+// Show upgrade modal for Pro features
+function showUpgradeModal(title, description) {
+  // Remove existing modal if any
+  const existingModal = document.querySelector('.upgrade-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create modal HTML
+  const modalHTML = `
+    <div class="upgrade-modal" id="upgrade-modal">
+      <div class="upgrade-modal__content">
+        <h3>${title}</h3>
+        <p>${description}</p>
+        
+        <div class="upgrade-modal__buttons">
+          <button class="btn-coinbase" id="modal-buy-coinbase">
+            Buy with Coinbase
+          </button>
+          
+          <div class="upgrade-modal__license-form">
+            <input type="text" id="modal-license-input" placeholder="Enter license key" style="font-family: monospace;">
+            <button class="btn-license" id="modal-activate-license">
+              Activate
+            </button>
+          </div>
+          
+          <button class="btn btn-secondary" id="modal-close" style="margin-top: 16px;">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to document
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Get modal elements
+  const modal = document.getElementById('upgrade-modal');
+  const modalBuyCoinbase = document.getElementById('modal-buy-coinbase');
+  const modalLicenseInput = document.getElementById('modal-license-input');
+  const modalActivateLicense = document.getElementById('modal-activate-license');
+  const modalClose = document.getElementById('modal-close');
+  
+  // Set up event listeners
+  if (modalBuyCoinbase) {
+    modalBuyCoinbase.addEventListener('click', async () => {
+      try {
+        // Show email input modal and wait for user input
+        const email = await showEmailInputModal();
+
+        modalBuyCoinbase.textContent = 'Opening checkout...';
+        modalBuyCoinbase.disabled = true;
+
+        const response = await chrome.runtime.sendMessage({
+          action: 'checkout:create',
+          provider: 'coinbase',
+          productCode: getSelectedProductCode(),
+          email: email
+        });
+
+        if (response && response.ok) {
+          if (response.tabError) {
+            // Tab creation failed, provide manual link
+            modal.innerHTML = `
+              <div class="upgrade-modal__content">
+                <h3>Checkout Created!</h3>
+                <p>If the Coinbase page didn't open automatically, click the button below:</p>
+                <a href="${response.hosted_url}" target="_blank" class="btn-coinbase" style="display: inline-block; text-decoration: none;">
+                  Open Coinbase Checkout
+                </a>
+                <p style="margin-top: 15px;">Complete your purchase and return here to activate your license.</p>
+                <button class="modal-close" onclick="this.closest('.upgrade-modal').remove()">Close</button>
+              </div>
+            `;
+          } else {
+            modal.remove();
+          }
+        } else {
+          throw new Error('Checkout failed');
+        }
+      } catch (error) {
+        console.error('Coinbase purchase failed:', error);
+        modalBuyCoinbase.textContent = 'Buy with Coinbase';
+        modalBuyCoinbase.disabled = false;
+        // Don't show error if user cancelled email input
+        if (error.message !== 'User cancelled email input') {
+          alert('Failed to create checkout. Please try again.');
+        }
+      }
+    });
+  }
+  
+  if (modalActivateLicense) {
+    modalActivateLicense.addEventListener('click', async () => {
+      const licenseKey = modalLicenseInput.value.trim();
+      if (!licenseKey) {
+        alert('Please enter a license key');
+        return;
+      }
+      
+      try {
+        modalActivateLicense.textContent = 'Activating...';
+        modalActivateLicense.disabled = true;
+        
+        const response = await chrome.runtime.sendMessage({
+          action: 'license:activate',
+          licenseKey: licenseKey
+        });
+        
+        if (response && response.ok) {
+          alert('License activated successfully!');
+          modal.remove();
+          updateLicenseUI();
+        } else {
+          throw new Error(response?.error || 'Activation failed');
+        }
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        modalActivateLicense.textContent = 'Activate';
+        modalActivateLicense.disabled = false;
+      }
+    });
+  }
+  
+  if (modalClose) {
+    modalClose.addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+  
+  // Close modal when clicking outside
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+  
+  // Close modal with Escape key
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.removeEventListener('keydown', escapeHandler);
+    }
+  };
+  document.addEventListener('keydown', escapeHandler);
+}
 
 // 调试函数
 window.debugOptions = {

@@ -506,6 +506,284 @@
     .content-area::-webkit-scrollbar-thumb:hover {
       background: #a8a8a8;
     }
+
+    /* Payment Tiles Styling */
+    .payment-tile {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .payment-tile:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .payment-tile.enabled {
+      border-color: #10b981;
+    }
+
+    .payment-tile.enabled:hover {
+      border-color: #059669;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .payment-tile.disabled {
+      border-color: #d1d5db;
+      background: #f9fafb;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .payment-tile.disabled:hover {
+      transform: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-color: #d1d5db;
+    }
+
+    .payment-tile h4 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .payment-tile.disabled h4 {
+      color: #6b7280;
+    }
+
+    .payment-tile p {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Payment Buttons Styling */
+    .btn-coinbase {
+      background: linear-gradient(135deg, #1652f0 0%, #0052ff 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(22, 82, 240, 0.3);
+      margin: 8px;
+      min-width: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-coinbase:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(22, 82, 240, 0.4);
+      background: linear-gradient(135deg, #0d4ce6 0%, #0046e6 100%);
+    }
+
+    .btn-coinbase:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(22, 82, 240, 0.3);
+    }
+
+    .btn-paypal {
+      background: #f3f4f6;
+      color: #9ca3af;
+      border: 2px solid #e5e7eb;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: not-allowed;
+      margin: 8px;
+      min-width: 180px;
+      opacity: 0.6;
+    }
+
+    /* Billing Cycle Toggle */
+    .billing-toggle {
+      display: inline-flex;
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .billing-toggle-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: transparent;
+      color: #6b7280;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .billing-toggle-btn:hover {
+      color: #374151;
+    }
+
+    .billing-toggle-btn--active {
+      background: white;
+      color: #1652f0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .save-badge {
+      background: #dcfce7;
+      color: #16a34a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .btn-license {
+      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-license:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+      background: linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
+    }
+
+    /* Pro Badge Styling */
+    .ap-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ap-badge--free {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .ap-badge--pro {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #92400e;
+    }
+
+    /* Overlay Styling for Pro Features */
+    .ap-blur-wrap {
+      position: relative;
+    }
+
+    .ap-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .ap-overlay__panel {
+      text-align: center;
+      padding: 40px 20px;
+      max-width: 400px;
+    }
+
+    .ap-overlay__panel h3 {
+      color: #111827;
+      margin-bottom: 12px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .ap-overlay__panel p {
+      color: #6b7280;
+      margin-bottom: 24px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .ap-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .ap-license-form {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .ap-license-form input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: monospace;
+    }
+
+    .ap-license-form input:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+
+    /* Payment Logo Styling */
+    .payment-logo {
+      display: inline-block;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .payment-tile:hover .payment-logo {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .coinbase-logo {
+      background: linear-gradient(135deg, #1652f0 0%, #0052ff 100%);
+    }
+
+    .paypal-logo {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+    }
   </style>
 </head>
 <body>
@@ -518,25 +796,23 @@
       </div>
       
       <nav class="nav-menu">
-        <div class="nav-item active" data-section="overview">
+        <!-- Hidden: Overview -->
+        <!-- <div class="nav-item" data-section="overview">
           <i>🏠</i>
           <span>Overview</span>
-        </div>
-        
-        <div class="nav-item" data-section="general">
-          <i>⚙️</i>
-          <span>General Settings</span>
-        </div>
-        
-        <div class="nav-item" data-section="domains">
+        </div> -->
+
+
+        <div class="nav-item active" data-section="domains">
           <i>🌐</i>
           <span>Domain Management</span>
         </div>
-        
-        <div class="nav-item" data-section="features">
+
+        <!-- Hidden: Advanced Features -->
+        <!-- <div class="nav-item" data-section="features">
           <i>🚀</i>
           <span>Advanced Features</span>
-        </div>
+        </div> -->
         
         <div class="nav-item" data-section="subscription">
           <i>💎</i>
@@ -553,10 +829,11 @@
           <span>History Records</span>
         </div>
         
-        <div class="nav-item" data-section="account">
+        <!-- Hidden: Account (not needed for privacy tool) -->
+        <!-- <div class="nav-item" data-section="account">
           <i>👤</i>
           <span>Account</span>
-        </div>
+        </div> -->
         
         <div class="nav-divider"></div>
         
@@ -574,8 +851,8 @@
 
     <!-- Right Content Area -->
     <div class="content-area">
-      <!-- Overview Section -->
-      <div class="content-section active" id="overview" style="display: block;">
+      <!-- Overview Section - Hidden -->
+      <div class="content-section" id="overview" style="display: none;">
         <div class="content-header">
           <h2>Overview</h2>
           <p>Welcome to AutoPurge - Your privacy protection dashboard</p>
@@ -609,55 +886,9 @@
         </div>
       </div>
 
-      <!-- General Settings Section -->
-      <div class="content-section" id="general">
-        <div class="content-header">
-          <h2>General Settings</h2>
-          <p>Configure basic AutoPurge functionality</p>
-        </div>
-        
-        <div class="content-body">
-          <div class="section-card">
-            <h3><i>🔧</i>Basic Configuration</h3>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="enabledToggle" class="toggle-switch">
-                <span class="slider"></span>
-                Enable AutoPurge
-              </label>
-            </div>
-            <div class="form-group">
-              <label for="delayInput">Deletion Delay (seconds)</label>
-              <input type="number" id="delayInput" class="form-control" min="1" max="300" value="10">
-            </div>
-            <div class="form-group">
-              <label for="freeLimitInput">Free Plan Limit (deletions/day)</label>
-              <input type="number" id="freeLimitInput" class="form-control" min="1" max="100" value="10">
-            </div>
-          </div>
-          
-          <div class="section-card">
-            <h3><i>💾</i>Data Management</h3>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="autoBackupToggle" class="toggle-switch">
-                <span class="slider"></span>
-                Auto Backup Settings
-              </label>
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="syncToggle" class="toggle-switch">
-                <span class="slider"></span>
-                Sync Across Devices
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Domain Management Section -->
-      <div class="content-section" id="domains">
+      <div class="content-section active" id="domains" style="display: block;">
         <div class="content-header">
           <h2>Domain Management</h2>
           <p>Manage which domains AutoPurge will protect</p>
@@ -670,45 +901,33 @@
             <div class="domain-list" id="presetDomainsList">
               <!-- Static test domains - will be replaced by JavaScript -->
               <div class="domain-item preset">
-                <span class="domain-name">google.com</span>
+                <span class="domain-name">xvideos.com</span>
               </div>
               <div class="domain-item preset">
-                <span class="domain-name">facebook.com</span>
+                <span class="domain-name">pornhub.com</span>
               </div>
               <div class="domain-item preset">
-                <span class="domain-name">youtube.com</span>
+                <span class="domain-name">xnxx.com</span>
               </div>
               <div class="domain-item preset">
-                <span class="domain-name">twitter.com</span>
+                <span class="domain-name">xhamster.com</span>
               </div>
               <div class="domain-item preset">
-                <span class="domain-name">instagram.com</span>
+                <span class="domain-name">onlyfans.com</span>
               </div>
               <div class="domain-item preset">
-                <span class="domain-name">linkedin.com</span>
-              </div>
-              <div class="domain-item preset">
-                <span class="domain-name">reddit.com</span>
-              </div>
-              <div class="domain-item preset">
-                <span class="domain-name">amazon.com</span>
-              </div>
-              <div class="domain-item preset">
-                <span class="domain-name">netflix.com</span>
-              </div>
-              <div class="domain-item preset">
-                <span class="domain-name">spotify.com</span>
+                <span class="domain-name">chaturbate.com</span>
               </div>
             </div>
             <!-- Debug buttons -->
-            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+            <!-- <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
               <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
               <button class="btn btn-secondary" id="logPresetDomainsBtn">Log Preset Domains</button>
               <button class="btn btn-secondary" id="reloadDataBtn">Reload Data</button>
               <button class="btn btn-secondary" id="testAddDomainBtn">Test Add Domain</button>
               <button class="btn btn-secondary" id="testRemoveDomainBtn">Test Remove Domain</button>
               <button class="btn btn-primary" id="forceRefreshDomainsBtn">Force Refresh</button>
-            </div>
+            </div> -->
           </div>
           
           <div class="section-card">
@@ -725,17 +944,17 @@
               <button class="btn btn-success" id="addDomainBtn">Add Domain</button>
             </div>
             <!-- Debug buttons -->
-            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+            <!-- <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
               <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Debug Tools:</p>
               <button class="btn btn-secondary" id="logCustomDomainsBtn">Log Custom Domains</button>
               <button class="btn btn-secondary" id="refreshListsBtn">Refresh Lists</button>
-            </div>
+            </div> -->
           </div>
         </div>
       </div>
 
-      <!-- Advanced Features Section -->
-      <div class="content-section" id="features">
+      <!-- Advanced Features Section - Hidden -->
+      <div class="content-section" id="features" style="display: none;">
         <div class="content-header">
           <h2>Advanced Features</h2>
           <p>Unlock premium features with Pro subscription</p>
@@ -815,41 +1034,139 @@
         </div>
         
         <div class="content-body">
+          <!-- Current Plan Status -->
           <div class="section-card">
-            <h3><i>💎</i>Pro Plan</h3>
-            <div style="text-align: center; margin: 20px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #2c3e50;">
-                $4.99<span style="font-size: 16px;">/month</span>
+            <h3><i>💎</i>Current Plan</h3>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span id="current-plan-badge" class="ap-badge ap-badge--free">Free</span>
+                  <span id="current-plan-status" style="color: #6b7280; font-size: 14px;">Basic features</span>
+                </div>
+                <p id="license-info" style="color: #9ca3af; font-size: 12px; margin-top: 8px; display: none;">
+                  License: <span id="license-code">••••-••••-••••</span>
+                </p>
               </div>
-              <p style="color: #7f8c8d; margin-bottom: 20px;">Unlock all premium features</p>
+              <button id="manage-license-btn" class="btn btn-secondary" style="display: none;">Manage</button>
+            </div>
+          </div>
+          
+          <!-- Pro Plan Purchase -->
+          <div class="section-card">
+            <h3><i>⭐</i>AutoPurge Pro</h3>
+
+            <!-- Billing Cycle Toggle -->
+            <div style="display: flex; justify-content: center; margin: 20px 0;">
+              <div class="billing-toggle" role="group">
+                <button id="monthly-plan-btn" class="billing-toggle-btn" data-cycle="monthly">
+                  Monthly
+                </button>
+                <button id="yearly-plan-btn" class="billing-toggle-btn billing-toggle-btn--active" data-cycle="yearly">
+                  Yearly
+                  <span class="save-badge">Save 18%</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+              <div id="plan-price" style="font-size: 32px; font-weight: bold; color: #2c3e50;">
+                $49<span style="font-size: 16px;">/year</span>
+              </div>
+              <p id="plan-description" style="color: #7f8c8d; margin-bottom: 20px;">Unlock all premium features</p>
             </div>
             
-            <div class="payment-methods">
-              <div class="payment-method" data-method="card">
-                <h4>💳 Credit Card</h4>
-                <p>Visa, Mastercard, American Express</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0;">
+              <div class="payment-tile enabled" data-testid="tile-coinbase" data-provider="coinbase">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                  <div class="payment-logo coinbase-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="8" fill="url(#coinbase-gradient)"/>
+                      <path d="M16 10C12.686 10 10 12.686 10 16C10 19.314 12.686 22 16 22C19.314 22 22 19.314 22 16C22 12.686 19.314 10 16 10ZM16 20C13.791 20 12 18.209 12 16C12 13.791 13.791 12 16 12C18.209 12 20 13.791 20 16C20 18.209 18.209 20 16 20Z" fill="white"/>
+                      <path d="M16 14.5C15.175 14.5 14.5 15.175 14.5 16C14.5 16.825 15.175 17.5 16 17.5C16.825 17.5 17.5 16.825 17.5 16C17.5 15.175 16.825 14.5 16 14.5Z" fill="white"/>
+                      <defs>
+                        <linearGradient id="coinbase-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                          <stop stop-color="#1652F0"/>
+                          <stop offset="1" stop-color="#0052FF"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+                <h4>Coinbase Commerce</h4>
+                <p>Pay with cryptocurrency<br>Bitcoin, Ethereum, USDC, and more</p>
               </div>
-              <div class="payment-method" data-method="paypal">
+              
+              <div class="payment-tile disabled" data-testid="tile-paypal" data-provider="paypal">
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                  <div class="payment-logo paypal-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="8" fill="#f3f4f6"/>
+                      <path d="M12.5 9H16.5C19.261 9 21.5 11.239 21.5 14C21.5 16.761 19.261 19 16.5 19H14.5L13.5 23H11.5L12.5 9Z" fill="#9ca3af"/>
+                      <path d="M15.5 11H19C21.209 11 23 12.791 23 15C23 17.209 21.209 19 19 19H17L16 23H14L15.5 11Z" fill="#6b7280"/>
+                    </svg>
+                  </div>
+                </div>
                 <h4>PayPal</h4>
-                <p>Fast and secure payment</p>
-              </div>
-              <div class="payment-method" data-method="crypto">
-                <h4>₿ Cryptocurrency</h4>
-                <p>Bitcoin, Ethereum, USDC</p>
+                <p>Fast and secure payment<br><small style="color: #f59e0b; font-weight: 600;">Coming Soon</small></p>
               </div>
             </div>
 
             <ul class="features-list">
               <li><span class="feature-check">✓</span> Unlimited history deletions</li>
-              <li><span class="feature-check">✓</span> Shadow History encryption</li>
-              <li><span class="feature-check">✓</span> Advanced analytics dashboard</li>
-              <li><span class="feature-check">✓</span> Priority customer support</li>
-              <li><span class="feature-check">✓</span> Custom domain rules</li>
-              <li><span class="feature-check">✓</span> API access</li>
+              <li><span class="feature-check">✓</span> Encrypted Shadow Vault</li>
+              <li><span class="feature-check">✓</span> Password protection</li>
+              <li><span class="feature-check">✓</span> History recovery</li>
+              <li><span class="feature-check">✓</span> Priority support</li>
             </ul>
 
-            <div style="text-align: center; margin-top: 20px;">
-              <button class="btn btn-warning" id="subscribeBtn">Subscribe Now</button>
+            <div style="text-align: center; margin-top: 24px;">
+              <button class="btn-coinbase" data-testid="btn-buy-coinbase" id="buy-coinbase-btn">
+                Buy with Coinbase
+              </button>
+              <button class="btn-paypal" data-testid="btn-buy-paypal" id="buy-paypal-btn" disabled>
+                PayPal (Coming Soon)
+              </button>
+            </div>
+          </div>
+          
+          <!-- License Activation -->
+          <div class="section-card">
+            <h3><i>🔑</i>Activate License</h3>
+            <p style="color: #6b7280; margin-bottom: 20px;">Already have a license key? Enter it below to activate your Pro features.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; max-width: 400px;">
+              <div>
+                <label for="license-key-input" style="display: block; font-weight: 500; margin-bottom: 8px; color: #374151;">License Key</label>
+                <input 
+                  type="text" 
+                  id="license-key-input" 
+                  data-testid="license-input"
+                  placeholder="Enter your license key" 
+                  style="width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: monospace;"
+                  maxlength="50"
+                >
+              </div>
+              
+              <div style="display: flex; gap: 12px;">
+                <button id="activate-license-btn" data-testid="btn-activate-license" class="btn-license" style="flex: 1;">
+                  Activate License
+                </button>
+                <button id="paste-license-btn" class="btn btn-secondary" style="padding: 12px;">
+                  📋 Paste
+                </button>
+              </div>
+            </div>
+            
+            <!-- License activation messages -->
+            <div id="license-message" style="margin-top: 16px;"></div>
+            
+            <!-- License activation help -->
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #3b82f6;">
+              <h4 style="color: #1f2937; margin-bottom: 8px;">Need help?</h4>
+              <p style="color: #6b7280; font-size: 13px; line-height: 1.5; margin: 0;">
+                License keys are sent to your email after purchase. Check your spam folder if you don't see it. 
+                Each license can be activated on up to 3 devices.
+              </p>
             </div>
           </div>
         </div>
@@ -1062,8 +1379,29 @@
             </div>
             
             <!-- 历史记录列表 -->
-            <div id="historyList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-              <p style="text-align: center; color: #666;">No records found</p>
+            <div class="ap-blur-wrap">
+              <div id="historyList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                <p style="text-align: center; color: #666;">No records found</p>
+              </div>
+              <div id="historyOverlay" class="ap-overlay" style="display: none;">
+                <div class="ap-overlay__panel">
+                  <h3 id="historyOverlayTitle">History Records is a Pro feature</h3>
+                  <p id="historyOverlayDescription">Unlock encrypted Shadow Vault to view and restore records.</p>
+                  
+                  <div class="ap-buttons">
+                    <button class="btn-coinbase" id="history-buy-coinbase">
+                      View Subscription Plans
+                    </button>
+                    
+                    <div class="ap-license-form">
+                      <input type="text" id="history-license-input" placeholder="Enter license key">
+                      <button class="btn-license" id="history-activate-license">
+                        Activate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <!-- 设置 -->
@@ -1083,8 +1421,8 @@
         </div>
       </div>
 
-      <!-- Account Section -->
-      <div class="content-section" id="account">
+      <!-- Account Section - Hidden (not needed for privacy tool) -->
+      <div class="content-section" id="account" style="display: none;">
         <div class="content-header">
           <h2>Account Settings</h2>
           <p>Manage your account and preferences</p>
@@ -1137,9 +1475,24 @@
           <div class="section-card">
             <h3><i>💬</i>Contact Support</h3>
             <p style="margin-bottom: 15px;">Need help? Our support team is here for you:</p>
-            <button class="btn btn-primary">Submit Ticket</button>
-            <button class="btn btn-secondary">Live Chat</button>
-            <button class="btn btn-secondary">Email Support</button>
+            <a href="https://t.me/autopurge_support" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; text-decoration: none; margin: 5px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+              </svg>
+              Telegram
+            </a>
+            <a href="https://discord.gg/jsh8xK8Wzq" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; text-decoration: none; margin: 5px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              </svg>
+              Discord
+            </a>
+            <a href="mailto:ilovexuu2024@gmail.com" class="btn btn-primary" style="display: inline-flex; align-items: center; text-decoration: none; margin: 5px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+              </svg>
+              Email Support
+            </a>
           </div>
         </div>
       </div>
@@ -1166,6 +1519,44 @@
             <button class="btn btn-secondary">GitHub Repository</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Input Modal for Checkout -->
+  <div id="emailInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+      <h3 style="margin-top: 0; color: #333;">Enter Your Email</h3>
+      <p style="color: #666; margin-bottom: 20px;">We'll send your license key and order confirmation to this email address:</p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email Address:</label>
+        <input type="email" id="checkoutEmailInput" placeholder="your@email.com" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        <span id="emailError" style="color: #dc3545; font-size: 14px; display: none; margin-top: 5px;">Please enter a valid email address</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="emailCancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        <button id="emailConfirmBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue to Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unlock Vault Modal -->
+  <div id="unlockVaultModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+      <h3 style="margin-top: 0; color: #333;">🔒 Unlock History Vault</h3>
+      <p style="color: #666; margin-bottom: 20px;">Enter your password to view deleted history records:</p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Password:</label>
+        <input type="password" id="unlockVaultPasswordInput" placeholder="Enter your password" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        <span id="unlockVaultError" style="color: #dc3545; font-size: 14px; display: none; margin-top: 5px;">Incorrect password</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="unlockVaultCancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        <button id="unlockVaultConfirmBtn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Unlock</button>
       </div>
     </div>
   </div>

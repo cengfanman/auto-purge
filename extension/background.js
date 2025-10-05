@@ -5,7 +5,14 @@
  * - Schedule history deletion for matching domains
  * - Manage deletion queue with debouncing
  * - Track usage statistics
+ * - Handle license verification and management
  */
+
+// Import license manager
+import { LicenseManager } from './license-manager.js';
+
+// Initialize license manager
+const licenseManager = new LicenseManager();
 
 // Default configuration
 const DEFAULT_CONFIG = {
@@ -16,6 +23,12 @@ const DEFAULT_CONFIG = {
   freeLimit: 10,
   usage: { deletionsToday: 0, deletionsTotal: 0 }
 };
+
+// API Base URL (now handled by license manager)
+const API_BASE_URL = 'https://api.autopurge.shop';
+
+// License verification interval (24 hours)
+const LICENSE_VERIFY_INTERVAL = 24 * 60 * 60 * 1000;
 
 // Enhanced deletion pipeline with debouncing and retry logic
 const deletionQueue = new Map(); // Map<url, {timeoutId, retryCount, timestamp}>
@@ -28,30 +41,72 @@ let isProEnabled = false;
 
 // Load preset domains and configuration on startup
 let presetDomains = [];
+let removedPresetDomains = [];
 let config = DEFAULT_CONFIG;
 
 // Initialize extension on startup and installation
 async function initializeExtension() {
   console.log('AutoPurge extension initializing...');
-  
-  // Load or initialize configuration
+
+  // Initialize license manager first
+  await licenseManager.initialize();
+
+  // Load configuration from storage
   const stored = await chrome.storage.local.get();
+
+  // Merge with defaults, but preserve license data
   config = { ...DEFAULT_CONFIG, ...stored };
-  await chrome.storage.local.set(config);
-  
+
+  // Only set missing config keys, don't overwrite license data
+  const configToUpdate = {};
+  for (const key of Object.keys(DEFAULT_CONFIG)) {
+    if (stored[key] === undefined) {
+      configToUpdate[key] = DEFAULT_CONFIG[key];
+    }
+  }
+
+  // Only update if there are missing keys
+  if (Object.keys(configToUpdate).length > 0) {
+    console.log('Setting missing config keys:', Object.keys(configToUpdate));
+    await chrome.storage.local.set(configToUpdate);
+  }
+
   // Load preset domains
   await loadPresetDomains();
-  
+
+  // Load removed preset domains
+  await loadRemovedPresetDomains();
+
   // Initialize Pro features if enabled
   if (config.plan === 'pro') {
     await initializeProFeatures();
   }
-  
+
   console.log('AutoPurge extension initialized successfully');
 }
 
 // Initialize on installation
-chrome.runtime.onInstalled.addListener(initializeExtension);
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('🔧 Extension event:', details.reason, details);
+
+  // Check if in dev mode by looking for update_url
+  const manifest = chrome.runtime.getManifest();
+  const isDevMode = !manifest.update_url;
+
+  console.log(`🔍 Dev mode: ${isDevMode}, Reason: ${details.reason}`);
+
+  // Reset stats in dev mode or on fresh install
+  if (isDevMode || details.reason === 'install') {
+    console.log('🆕 Resetting usage stats (dev mode or fresh install)');
+    await chrome.storage.local.set({
+      usage: { deletionsToday: 0, deletionsTotal: 0 },
+      lastStatsReset: new Date().toDateString()
+    });
+    console.log('✅ Usage stats reset complete');
+  }
+
+  await initializeExtension();
+});
 
 // Initialize on startup (service worker wake up)
 chrome.runtime.onStartup.addListener(initializeExtension);
@@ -76,6 +131,18 @@ async function loadPresetDomains() {
   } catch (error) {
     console.error('Failed to load preset domains:', error);
     presetDomains = [];
+  }
+}
+
+// Load removed preset domains from storage
+async function loadRemovedPresetDomains() {
+  try {
+    const stored = await chrome.storage.local.get(['removedPresetDomains']);
+    removedPresetDomains = stored.removedPresetDomains || [];
+    console.log(`Loaded ${removedPresetDomains.length} removed preset domains:`, removedPresetDomains);
+  } catch (error) {
+    console.error('Failed to load removed preset domains:', error);
+    removedPresetDomains = [];
   }
 }
 
@@ -105,11 +172,19 @@ function shouldPurgeDomain(url) {
       return false;
     }
     
-    // Check against preset domains
+    // Check against preset domains (excluding removed ones)
     console.log('Checking preset domains:', presetDomains);
+    console.log('Removed preset domains:', removedPresetDomains);
+    
     for (const domain of presetDomains) {
+      // Skip if domain was removed by user
+      if (removedPresetDomains.includes(domain)) {
+        console.log('Skipping removed preset domain:', domain);
+        continue;
+      }
+      
       if (hostname === domain || hostname.endsWith('.' + domain)) {
-        console.log('Match found in preset domains:', domain);
+        console.log('Match found in active preset domains:', domain);
         return true;
       }
     }
@@ -230,10 +305,19 @@ async function deleteFromHistory(url) {
         try {
           await chrome.history.deleteUrl({ url });
           console.log(`Retry successful for: ${url}`);
-          
+
+          // Extract domain from URL for recording
+          let retryDomain = '';
+          try {
+            const urlObj = new URL(url);
+            retryDomain = urlObj.hostname;
+          } catch (e) {
+            // Ignore domain extraction error
+          }
+
           // Record the deletion in history records
-          await recordHistoryDeletion(url, '', domain);
-          
+          await recordHistoryDeletion(url, '', retryDomain);
+
           // Update statistics
           config.usage.deletionsTotal++;
           config.usage.deletionsToday++;
@@ -360,6 +444,105 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse(config);
       break;
       
+    // ======= LICENSE MANAGEMENT MESSAGES =======
+    case 'license:getState':
+      (async () => {
+        try {
+          const stored = await chrome.storage.local.get(['licenseData', 'plan']);
+          const licenseData = stored.licenseData || null;
+          const plan = stored.plan || 'free';
+          sendResponse({
+            plan: plan,
+            licenseData: licenseData,
+            hasLicense: !!licenseData
+          });
+        } catch (error) {
+          console.error('Failed to get license state:', error);
+          sendResponse({ plan: 'free', licenseData: null, hasLicense: false });
+        }
+      })();
+      return true;
+
+    case 'license:activate':
+      (async () => {
+        try {
+          const result = await licenseManager.activateLicense(message.licenseKey);
+          sendResponse({ ok: true, data: result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+
+    case 'license:verify':
+      (async () => {
+        try {
+          const result = await licenseManager.verifyLicense();
+          sendResponse({ ok: result.valid, data: result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+
+    case 'license:deactivate':
+      (async () => {
+        try {
+          await licenseManager.deactivateLicense();
+          sendResponse({ ok: true });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+
+    case 'license:info':
+      (async () => {
+        try {
+          const result = await licenseManager.getLicenseInfo();
+          sendResponse({ ok: true, data: result });
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+
+    case 'license:hasProFeatures':
+      (async () => {
+        try {
+          const result = await licenseManager.hasProFeatures();
+          sendResponse({ ok: true, hasProFeatures: result });
+        } catch (error) {
+          sendResponse({ ok: false, hasProFeatures: false });
+        }
+      })();
+      return true;
+
+    case 'checkout:create':
+      (async () => {
+        try {
+          const result = await licenseManager.createCheckout(message.email, message.productCode);
+          
+          // Try to open the checkout URL in a new tab
+          try {
+            await chrome.tabs.create({ url: result });
+            sendResponse({ ok: true, url: result });
+          } catch (tabError) {
+            // If tab creation fails, still return success but indicate tab error
+            console.warn('Failed to create tab:', tabError);
+            sendResponse({ 
+              ok: true, 
+              url: result, 
+              hosted_url: result,
+              tabError: true 
+            });
+          }
+        } catch (error) {
+          sendResponse({ ok: false, error: error.message });
+        }
+      })();
+      return true;
+      
     case 'updateConfig':
       (async () => {
         config = { ...config, ...message.config };
@@ -367,8 +550,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       })();
       return true; // Keep message channel open for async response
-      break;
-      
+
     case 'deleteRecentHistory': {
       const { minutes } = message;
       const startTime = Date.now() - (minutes * 60 * 1000);
@@ -391,9 +573,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       })();
       return true; // Keep message channel open for async response
-      break;
     }
-      
+
     case 'getStats':
       sendResponse({
         deletionsToday: config.usage.deletionsToday,
@@ -562,6 +743,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })();
       return true; // Keep message channel open for async response
       
+    case 'updateRemovedPresetDomains':
+      (async () => {
+        try {
+          await loadRemovedPresetDomains();
+          sendResponse({ success: true, removedDomains: removedPresetDomains });
+        } catch (error) {
+          console.error('Failed to update removed preset domains:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      })();
+      return true; // Keep message channel open for async response
+      
     default:
       sendResponse({ error: 'Unknown action' });
   }
@@ -570,19 +763,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Reset daily statistics at midnight
-function resetDailyStats() {
+async function resetDailyStats() {
+  // Check if we need to reset based on last reset date
+  const stored = await chrome.storage.local.get(['lastStatsReset', 'usage']);
+  const today = new Date().toDateString();
+  const lastReset = stored.lastStatsReset;
+
+  console.log(`🔍 Daily stats check - Today: ${today}, Last reset: ${lastReset}`);
+
+  // If it's a new day, reset immediately
+  if (lastReset !== today) {
+    console.log('📊 Resetting daily stats (new day detected)');
+    config.usage = stored.usage || config.usage;
+    config.usage.deletionsToday = 0;
+    await chrome.storage.local.set({
+      usage: config.usage,
+      lastStatsReset: today
+    });
+  }
+
+  // Schedule next reset at midnight
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
-  
+
   const msUntilMidnight = tomorrow.getTime() - now.getTime();
-  
+  console.log(`⏰ Next stats reset scheduled in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+
   setTimeout(async () => {
     config.usage.deletionsToday = 0;
-    await chrome.storage.local.set({ usage: config.usage });
-    console.log('Daily statistics reset');
-    
+    const newToday = new Date().toDateString();
+    await chrome.storage.local.set({
+      usage: config.usage,
+      lastStatsReset: newToday
+    });
+    console.log('📊 Daily statistics reset at midnight');
+
     // Schedule next reset
     resetDailyStats();
   }, msUntilMidnight);
@@ -667,6 +884,9 @@ async function recordHistoryDeletion(url, title, domain) {
     console.error('Failed to record history deletion:', error);
   }
 }
+
+// ============ LICENSE MANAGEMENT ============
+// License management is now handled by the LicenseManager class
 
 // Reload configuration when storage changes
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
@@ -789,3 +1009,4 @@ function getRuleIdForUrl(url) {
     return 'unknown';
   }
 }
+

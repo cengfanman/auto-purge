@@ -13,6 +13,7 @@
       <div class="logo">
         <img src="icon.png" alt="AutoPurge" class="logo-icon">
         <h1>AutoPurge</h1>
+        <span id="plan-badge" class="ap-badge ap-badge--free">Free</span>
       </div>
       <div class="status-badge" id="statusBadge">
         <span class="status-dot" id="statusDot"></span>
@@ -45,10 +46,10 @@
           <span class="badge-text">Detected</span>
         </div>
       </div>
-      <button class="btn btn-secondary btn-small" id="refreshSiteBtn">Refresh</button>
+      <!-- <button class="btn btn-secondary btn-small" id="refreshSiteBtn">Refresh</button> -->
       <!-- 调试按钮 -->
-      <button class="btn btn-secondary btn-small" onclick="window.popupDebug.forceReset()" style="margin-left: 8px;">Reset</button>
-      <button class="btn btn-secondary btn-small" onclick="testDebug()" style="margin-left: 8px;">Test Debug</button>
+      <!-- <button class="btn btn-secondary btn-small" onclick="window.popupDebug.forceReset()" style="margin-left: 8px;">Reset</button>
+      <button class="btn btn-secondary btn-small" onclick="testDebug()" style="margin-left: 8px;">Test Debug</button> -->
     </div>
 
     <!-- Monitoring Status -->
@@ -90,24 +91,58 @@
       </div>
     </div>
 
-    <!-- Pro Features (if available) -->
-    <div class="section pro-section" id="proSection" style="display: none;">
+    <!-- Pro Features and License Management -->
+    <div class="section pro-section" id="proSection">
       <h3>Pro Features</h3>
+
+      <!-- License Status -->
+      <div class="license-status" id="licenseStatus">
+        <div class="license-info" id="licenseInfo">
+          <span class="license-text">No active license</span>
+        </div>
+      </div>
+
+      <!-- License Activation -->
+      <div class="license-activation" id="licenseActivation">
+        <div class="input-group">
+          <input type="text"
+                 id="licenseKeyInput"
+                 placeholder="Enter license key (AP-2025-XXXXXX)"
+                 class="license-input">
+          <button class="btn btn-pro btn-small" id="activateLicenseBtn">Activate</button>
+        </div>
+        <div class="license-error" id="licenseError" style="display: none;"></div>
+        <div class="license-success" id="licenseSuccess" style="display: none;"></div>
+      </div>
+
+      <!-- Pro Features List -->
       <div class="pro-features">
         <div class="pro-feature">
-          <span class="feature-icon">🔒</span>
-          <span class="feature-text">Shadow History</span>
+          <span class="feature-icon">🚫</span>
+          <span class="feature-text">Unlimited Domains</span>
         </div>
         <div class="pro-feature">
-          <span class="feature-icon">📊</span>
-          <span class="feature-text">Advanced Analytics</span>
+          <span class="feature-icon">🔒</span>
+          <span class="feature-text">PIN Protection</span>
+        </div>
+        <div class="pro-feature">
+          <span class="feature-icon">🔄</span>
+          <span class="feature-text">Shadow History</span>
         </div>
         <div class="pro-feature">
           <span class="feature-icon">⚡</span>
           <span class="feature-text">Priority Support</span>
         </div>
       </div>
-      <button class="btn btn-pro" id="upgradeBtn">Upgrade to Pro</button>
+
+      <!-- Purchase button (shown when no license) -->
+      <button class="btn btn-pro" id="upgradeBtn">Get Pro License</button>
+
+      <!-- License management buttons (shown when license is active) -->
+      <div class="license-actions" id="licenseActions" style="display: none;">
+        <button class="btn btn-secondary btn-small" id="manageLicenseBtn">Manage License</button>
+        <button class="btn btn-danger btn-small" id="deactivateLicenseBtn">Deactivate</button>
+      </div>
     </div>
 
     <!-- Footer -->

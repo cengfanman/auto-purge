@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPurge Extension Fix Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .code {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #e9ecef;
+            margin: 10px 0;
+        }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #495057; margin-top: 30px; }
+        h3 { color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 AutoPurge Extension Fix Verification</h1>
+
+        <h2>🐛 Problem Analysis</h2>
+        <div class="error">
+            <strong>Issue Found:</strong> Using <code>importScripts()</code> in Manifest V3 Service Worker
+        </div>
+
+        <div class="info">
+            <strong>Cause:</strong> Manifest V3 service workers don't support <code>importScripts()</code>.
+            They require ES6 modules with <code>import</code> statements.
+        </div>
+
+        <h2>🛠️ Applied Fixes</h2>
+
+        <h3>1. Updated manifest.json</h3>
+        <div class="code">
+"background": {
+  "service_worker": "background.js",
+  "type": "module"  // ← Added this
+}
+        </div>
+
+        <h3>2. Modified license-manager.js</h3>
+        <div class="code">
+// Old (Window global):
+window.LicenseManager = LicenseManager;
+
+// New (ES6 export):
+export { LicenseManager };
+        </div>
+
+        <h3>3. Updated background.js</h3>
+        <div class="code">
+// Old (importScripts):
+importScripts('license-manager.js');
+
+// New (ES6 import):
+import { LicenseManager } from './license-manager.js';
+        </div>
+
+        <h2>🔍 Chrome Extension Debugging Guide</h2>
+
+        <div class="warning">
+            <strong>How to debug extension issues:</strong>
+        </div>
+
+        <h3>Method 1: Chrome Extensions Page</h3>
+        <div class="code">
+1. Open Chrome and go to: chrome://extensions/
+2. Enable "Developer mode" (top right toggle)
+3. Find your "AutoPurge" extension
+4. Click "Errors" button if it appears (red button)
+5. Look for JavaScript errors in the console
+        </div>
+
+        <h3>Method 2: Service Worker DevTools</h3>
+        <div class="code">
+1. Go to: chrome://extensions/
+2. Find "AutoPurge" extension
+3. Click "service worker" link under "Inspect views"
+4. Check the Console tab for errors
+5. Look for failed imports or syntax errors
+        </div>
+
+        <h3>Method 3: Popup DevTools</h3>
+        <div class="code">
+1. Right-click the AutoPurge extension icon
+2. Select "Inspect popup"
+3. Check Console for errors
+4. Test button clicks and see if events fire
+        </div>
+
+        <h2>✅ Verification Steps</h2>
+
+        <div class="success">
+            <strong>After applying fixes, verify:</strong>
+            <ol>
+                <li>Extension loads without errors in chrome://extensions/</li>
+                <li>Service worker starts successfully</li>
+                <li>Popup opens and buttons respond to clicks</li>
+                <li>License activation form works</li>
+                <li>No console errors in any DevTools</li>
+            </ol>
+        </div>
+
+        <h2>🚨 Common Issues & Solutions</h2>
+
+        <div class="info">
+            <strong>If buttons still don't work:</strong>
+            <ul>
+                <li><strong>Hard reload:</strong> Remove and re-add the extension</li>
+                <li><strong>Check CSP:</strong> Ensure no Content Security Policy issues</li>
+                <li><strong>Permissions:</strong> Verify all required permissions are granted</li>
+                <li><strong>File paths:</strong> Check all import paths are correct</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>If license activation fails:</strong>
+            <ul>
+                <li>Check network connectivity to api.autopurge.shop</li>
+                <li>Verify CORS settings allow extension access</li>
+                <li>Test with DevTools Network tab open</li>
+                <li>Check if license key format is correct</li>
+            </ul>
+        </div>
+
+        <h2>📋 Final Checklist</h2>
+
+        <div class="code">
+□ manifest.json has "type": "module" in background
+□ license-manager.js uses export { LicenseManager }
+□ background.js uses import { LicenseManager }
+□ No importScripts() calls in service worker
+□ Extension reloaded after changes
+□ No errors in chrome://extensions/
+□ Service worker console is clean
+□ Popup buttons respond to clicks
+□ License activation test passes
+        </div>
+
+        <div class="success">
+            <strong>🎉 Extension should now work correctly!</strong>
+            <br>All buttons should be responsive and license functionality should work as expected.
+        </div>
+    </div>
+</body>
+</html>

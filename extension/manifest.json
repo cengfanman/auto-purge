@@ -19,13 +19,14 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["data/preset-domains.json"],
+      "resources": ["data/preset-domains.json", "license-manager.js"],
       "matches": ["<all_urls>"]
     }
   ],
   
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   
   "options_page": "options.html",
