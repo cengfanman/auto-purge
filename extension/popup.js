@@ -490,37 +490,61 @@ async function refreshStats() {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Refresh site button
-  refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
+  // Refresh site button (optional - may be commented out in HTML)
+  if (refreshSiteBtn) {
+    refreshSiteBtn.addEventListener('click', loadCurrentTabStatus);
+  }
 
   // Toggle extension
-  toggleBtn.addEventListener('click', toggleExtension);
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', toggleExtension);
+  }
 
   // Clear recent history
-  clearHistoryBtn.addEventListener('click', clearRecentHistory);
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', clearRecentHistory);
+  }
 
   // Settings button
-  settingsBtn.addEventListener('click', openSettings);
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', openSettings);
+  }
 
   // Upgrade button
-  upgradeBtn.addEventListener('click', openUpgrade);
+  if (upgradeBtn) {
+    upgradeBtn.addEventListener('click', openUpgrade);
+  }
 
   // License management
-  activateLicenseBtn.addEventListener('click', activateLicense);
-  deactivateLicenseBtn.addEventListener('click', deactivateLicense);
-  manageLicenseBtn.addEventListener('click', manageLicense);
+  if (activateLicenseBtn) {
+    activateLicenseBtn.addEventListener('click', activateLicense);
+  }
+  if (deactivateLicenseBtn) {
+    deactivateLicenseBtn.addEventListener('click', deactivateLicense);
+  }
+  if (manageLicenseBtn) {
+    manageLicenseBtn.addEventListener('click', manageLicense);
+  }
 
   // License key input
-  licenseKeyInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      activateLicense();
-    }
-  });
+  if (licenseKeyInput) {
+    licenseKeyInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        activateLicense();
+      }
+    });
+  }
 
   // Footer links
-  helpLink.addEventListener('click', openHelp);
-  feedbackLink.addEventListener('click', openFeedback);
-  privacyLink.addEventListener('click', openPrivacy);
+  if (helpLink) {
+    helpLink.addEventListener('click', openHelp);
+  }
+  if (feedbackLink) {
+    feedbackLink.addEventListener('click', openFeedback);
+  }
+  if (privacyLink) {
+    privacyLink.addEventListener('click', openPrivacy);
+  }
 }
 
 // Toggle extension on/off

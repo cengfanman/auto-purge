@@ -105,7 +105,27 @@ async function initializeExtension() {
 }
 
 // Initialize on installation
-chrome.runtime.onInstalled.addListener(initializeExtension);
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('🔧 Extension event:', details.reason, details);
+
+  // Check if in dev mode by looking for update_url
+  const manifest = chrome.runtime.getManifest();
+  const isDevMode = !manifest.update_url;
+
+  console.log(`🔍 Dev mode: ${isDevMode}, Reason: ${details.reason}`);
+
+  // Reset stats in dev mode or on fresh install
+  if (isDevMode || details.reason === 'install') {
+    console.log('🆕 Resetting usage stats (dev mode or fresh install)');
+    await chrome.storage.local.set({
+      usage: { deletionsToday: 0, deletionsTotal: 0 },
+      lastStatsReset: new Date().toDateString()
+    });
+    console.log('✅ Usage stats reset complete');
+  }
+
+  await initializeExtension();
+});
 
 // Initialize on startup (service worker wake up)
 chrome.runtime.onStartup.addListener(initializeExtension);
@@ -755,19 +775,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Reset daily statistics at midnight
-function resetDailyStats() {
+async function resetDailyStats() {
+  // Check if we need to reset based on last reset date
+  const stored = await chrome.storage.local.get(['lastStatsReset', 'usage']);
+  const today = new Date().toDateString();
+  const lastReset = stored.lastStatsReset;
+
+  console.log(`🔍 Daily stats check - Today: ${today}, Last reset: ${lastReset}`);
+
+  // If it's a new day, reset immediately
+  if (lastReset !== today) {
+    console.log('📊 Resetting daily stats (new day detected)');
+    config.usage = stored.usage || config.usage;
+    config.usage.deletionsToday = 0;
+    await chrome.storage.local.set({
+      usage: config.usage,
+      lastStatsReset: today
+    });
+  }
+
+  // Schedule next reset at midnight
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
-  
+
   const msUntilMidnight = tomorrow.getTime() - now.getTime();
-  
+  console.log(`⏰ Next stats reset scheduled in ${Math.round(msUntilMidnight / 1000 / 60)} minutes`);
+
   setTimeout(async () => {
     config.usage.deletionsToday = 0;
-    await chrome.storage.local.set({ usage: config.usage });
-    console.log('Daily statistics reset');
-    
+    const newToday = new Date().toDateString();
+    await chrome.storage.local.set({
+      usage: config.usage,
+      lastStatsReset: newToday
+    });
+    console.log('📊 Daily statistics reset at midnight');
+
     // Schedule next reset
     resetDailyStats();
   }, msUntilMidnight);
