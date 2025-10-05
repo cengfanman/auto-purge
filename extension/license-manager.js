@@ -3,25 +3,6 @@
  * Handles license activation, verification, and management
  */
 
-// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes from license-manager
-(function() {
-  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
-  chrome.storage.local.set = function(items, callback) {
-    console.log('🔍 [LICENSE-MANAGER] chrome.storage.local.set called with:', items);
-    console.trace('Stack trace:');
-
-    // Check if overwriting plan or licenseData
-    if (items.plan !== undefined || items.licenseData !== undefined) {
-      console.warn('⚠️ [LICENSE-MANAGER] WARNING: Writing plan or licenseData:', {
-        plan: items.plan,
-        licenseData: items.licenseData ? 'exists' : 'null/undefined'
-      });
-    }
-
-    return originalSet(items, callback);
-  };
-})();
-
 class LicenseManager {
   constructor() {
     this.apiBaseUrl = 'https://api.autopurge.shop'; // 线上生产服务器
@@ -112,10 +93,6 @@ class LicenseManager {
       if (!result.success) {
         throw new Error(result.error || 'License activation failed');
       }
-
-      // 🐛 DEBUG: Log API response
-      console.log('🔍 API Response result.data:', JSON.stringify(result.data, null, 2));
-
       // Store license data
       const licenseData = {
         licenseKey: licenseKey,

@@ -3,25 +3,6 @@
  * Handles settings, user management, and payment processing
  */
 
-// 🐛 DEBUG: Wrap chrome.storage.local.set to log all writes
-(function() {
-  const originalSet = chrome.storage.local.set.bind(chrome.storage.local);
-  chrome.storage.local.set = function(items, callback) {
-    console.log('🔍 [OPTIONS] chrome.storage.local.set called with:', items);
-    console.trace('Stack trace:');
-
-    // Check if overwriting plan or licenseData
-    if (items.plan !== undefined || items.licenseData !== undefined) {
-      console.warn('⚠️ [OPTIONS] WARNING: Writing plan or licenseData:', {
-        plan: items.plan,
-        licenseData: items.licenseData ? 'exists' : 'null/undefined'
-      });
-    }
-
-    return originalSet(items, callback);
-  };
-})();
-
 // Navigation functionality for left-right layout
 function setupNavigation() {
   console.log('Setting up navigation...');
@@ -402,100 +383,6 @@ function forceShowContent() {
   console.log('Content display forced');
 }
 
-// Debug function to check current license and vault status
-async function debugLicenseAndVaultStatus() {
-  try {
-    console.log('=== DEBUG: License and Vault Status ===');
-    
-    // Check license state
-    const licenseResponse = await chrome.runtime.sendMessage({ action: 'license:getState' });
-    console.log('License State:', licenseResponse);
-    
-    // Check vault status
-    const vaultStatus = await checkVaultStatus();
-    console.log('Vault Status:', vaultStatus);
-    
-    // Check password protection status
-    const stored = await chrome.storage.local.get([
-      'passwordProtectionEnabled', 
-      'vaultUnlocked', 
-      'licenseData', 
-      'plan',
-      'passwordHash'
-    ]);
-    console.log('Storage Status:', {
-      passwordProtectionEnabled: stored.passwordProtectionEnabled,
-      vaultUnlocked: stored.vaultUnlocked,
-      hasLicenseData: !!stored.licenseData,
-      plan: stored.plan,
-      hasPasswordHash: !!stored.passwordHash
-    });
-    
-    // Check if license is valid
-    if (stored.licenseData) {
-      const verifyResponse = await chrome.runtime.sendMessage({ action: 'license:verify' });
-      console.log('License Verification:', verifyResponse);
-    }
-    
-    console.log('=== END DEBUG ===');
-  } catch (error) {
-    console.error('Debug failed:', error);
-  }
-}
-
-// Add debug function to window for easy access
-window.debugLicenseAndVaultStatus = debugLicenseAndVaultStatus;
-
-// Fix function to correct vault lock status
-async function fixVaultLockStatus() {
-  try {
-    console.log('=== FIXING VAULT LOCK STATUS ===');
-    
-    const stored = await chrome.storage.local.get([
-      'passwordProtectionEnabled', 
-      'vaultUnlocked', 
-      'passwordHash'
-    ]);
-    
-    console.log('Current status:', {
-      passwordProtectionEnabled: stored.passwordProtectionEnabled,
-      vaultUnlocked: stored.vaultUnlocked,
-      hasPasswordHash: !!stored.passwordHash
-    });
-    
-    if (stored.passwordProtectionEnabled && stored.passwordHash) {
-      // Password protection is enabled, vault should be locked
-      await chrome.storage.local.set({ vaultUnlocked: false });
-      console.log('✅ Vault locked (password protection enabled)');
-      
-      // Update History Records display
-      await updateHistoryDisplay();
-      
-      alert('Vault has been locked. You can now use the unlock feature.');
-    } else if (!stored.passwordProtectionEnabled) {
-      // Password protection is disabled, vault should be unlocked
-      await chrome.storage.local.set({ vaultUnlocked: true });
-      console.log('✅ Vault unlocked (password protection disabled)');
-      
-      // Update History Records display
-      await updateHistoryDisplay();
-      
-      alert('Vault has been unlocked (password protection disabled).');
-    } else {
-      console.log('❌ No password hash found. Please set a password first.');
-      alert('Please set a password first before using vault protection.');
-    }
-    
-    console.log('=== FIX COMPLETED ===');
-  } catch (error) {
-    console.error('Fix failed:', error);
-    alert('Failed to fix vault status: ' + error.message);
-  }
-}
-
-// Add fix function to window for easy access
-window.fixVaultLockStatus = fixVaultLockStatus;
-
 // Auto lock vault on page load for security
 async function autoLockVault() {
   try {
@@ -822,7 +709,7 @@ function setupDebugButtonListeners() {
   
   if (forceRefreshDomainsBtn) {
     forceRefreshDomainsBtn.addEventListener('click', () => {
-      forceRefreshDomains();
+      window.forceRefreshDomains();
     });
   }
   
@@ -1574,12 +1461,6 @@ function showSignUpModal() {
   }
 }
 
-// Show upgrade modal
-function showUpgradeModal() {
-  // Redirect to payment section
-  document.querySelector('.payment-section').scrollIntoView({ behavior: 'smooth' });
-}
-
 // Show success message
 function showSuccess(message) {
   showMessage(message, 'success');
@@ -1781,159 +1662,6 @@ async function updatePasswordUI() {
   }
 }
 
-// 切换密码保护
-async function togglePasswordProtection() {
-  const enabled = passwordEnabledToggle.checked;
-  
-  if (enabled) {
-    // Check for Pro license first
-    try {
-      const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
-      const license = response || { plan: 'free' };
-      
-      if (license.plan === 'free') {
-        // Revert checkbox state
-        passwordEnabledToggle.checked = false;
-        
-        // Show upgrade modal
-        showUpgradeModal('Password Protection is a Pro feature', 'Secure your AutoPurge settings with password protection.');
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to check license:', error);
-      // On error, assume free plan
-      passwordEnabledToggle.checked = false;
-      showUpgradeModal('Password Protection is a Pro feature', 'Secure your AutoPurge settings with password protection.');
-      return;
-    }
-    
-    // 启用密码保护 - 需要设置密码
-    const password = prompt('Enter a password to protect AutoPurge settings:');
-    if (!password) {
-      passwordEnabledToggle.checked = false;
-      return;
-    }
-    
-    if (password.length < 6) {
-      showError('Password must be at least 6 characters long');
-      passwordEnabledToggle.checked = false;
-      return;
-    }
-    
-    try {
-      const salt = generateSalt();
-      const hash = await hashPassword(password, salt);
-      
-      // 保存到 chrome.storage.local
-      await chrome.storage.local.set({
-        passwordHash: hash,
-        passwordSalt: salt,
-        passwordProtectionEnabled: true
-      });
-      
-      updatePasswordUI();
-      showMessage('Password protection enabled', 'success');
-      
-    } catch (error) {
-      console.error('Failed to enable password protection:', error);
-      showError('Failed to enable password protection');
-      passwordEnabledToggle.checked = false;
-    }
-  } else {
-    // 禁用密码保护 - 需要密码验证
-    await handleDisablePasswordProtection();
-  }
-}
-
-// 更新密码
-async function updatePassword() {
-  const currentPassword = currentPasswordInput.value;
-  const newPassword = newPasswordInput.value;
-  const confirmPassword = confirmPasswordInput.value;
-  
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    showError('Please fill in all password fields');
-    return;
-  }
-  
-  if (newPassword !== confirmPassword) {
-    showError('New passwords do not match');
-    return;
-  }
-  
-  if (newPassword.length < 6) {
-    showError('New password must be at least 6 characters long');
-    return;
-  }
-  
-  try {
-    // 验证当前密码
-    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
-    if (!isValid) {
-      showError('Current password is incorrect');
-      return;
-    }
-    
-    // 生成新的哈希
-    const salt = generateSalt();
-    const hash = await hashPassword(newPassword, salt);
-    
-    passwordConfig = {
-      enabled: true,
-      hash: hash,
-      salt: salt
-    };
-    
-    localStorage.setItem('autopurge_password', JSON.stringify(passwordConfig));
-    
-    // 清空输入框
-    currentPasswordInput.value = '';
-    newPasswordInput.value = '';
-    confirmPasswordInput.value = '';
-    
-    showSuccess('Password updated successfully');
-    
-  } catch (error) {
-    console.error('Failed to update password:', error);
-    showError('Failed to update password');
-  }
-}
-
-// 移除密码
-async function removePassword() {
-  const currentPassword = currentPasswordInput.value;
-  
-  if (!currentPassword) {
-    showError('Please enter current password to remove password protection');
-    return;
-  }
-  
-  try {
-    // 验证当前密码
-    const isValid = await verifyPassword(currentPassword, passwordConfig.hash, passwordConfig.salt);
-    if (!isValid) {
-      showError('Current password is incorrect');
-      return;
-    }
-    
-    passwordConfig = { enabled: false, hash: null, salt: null };
-    localStorage.removeItem('autopurge_password');
-    
-    // 清空输入框并更新 UI
-    currentPasswordInput.value = '';
-    newPasswordInput.value = '';
-    confirmPasswordInput.value = '';
-    passwordEnabledToggle.checked = false;
-    updatePasswordUI();
-    
-    showSuccess('Password protection removed');
-    
-  } catch (error) {
-    console.error('Failed to remove password:', error);
-    showError('Failed to remove password');
-  }
-}
-
 // ==================== 简化测试功能 ====================
 
 // 更新历史记录 UI
@@ -2010,116 +1738,6 @@ async function updateHistoryUI() {
     console.error('Failed to update history UI:', error);
   }
 }
-
-// 更新历史记录列表
-function updateHistoryList(records) {
-  if (!historyList) return;
-  
-  if (records.length === 0) {
-    historyList.innerHTML = '<p style="text-align: center; color: #666;">No records found</p>';
-    return;
-  }
-  
-  const html = records.map(record => {
-    const date = new Date(record.deletedAt).toLocaleString();
-    return `
-      <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-weight: bold; color: #333;">${record.title || 'Untitled'}</div>
-          <div style="font-size: 12px; color: #666;">${record.url}</div>
-          <div style="font-size: 11px; color: #999;">${date}</div>
-        </div>
-        <div style="font-size: 12px; color: #666;">${record.domain}</div>
-      </div>
-    `;
-  }).join('');
-  
-  historyList.innerHTML = html;
-}
-
-// 刷新历史记录
-async function refreshHistoryRecords() {
-  console.log('Refreshing history records...');
-  await updateHistoryUI();
-  showMessage('History records refreshed', 'success');
-}
-
-// 导出历史记录
-async function exportHistoryRecords() {
-  try {
-    const stored = await chrome.storage.local.get(['historyRecords']);
-    const records = stored.historyRecords || [];
-    
-    const dataStr = JSON.stringify(records, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `autopurge-history-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
-    showMessage('History records exported', 'success');
-  } catch (error) {
-    console.error('Failed to export history records:', error);
-    showMessage('Failed to export history records', 'error');
-  }
-}
-
-// 清空历史记录
-async function clearHistoryRecords() {
-  if (confirm('Are you sure you want to clear all history records? This action cannot be undone.')) {
-    try {
-      await chrome.storage.local.set({ historyRecords: [] });
-      await updateHistoryUI();
-      showMessage('History records cleared', 'success');
-    } catch (error) {
-      console.error('Failed to clear history records:', error);
-      showMessage('Failed to clear history records', 'error');
-    }
-  }
-}
-
-// 过滤历史记录
-function filterHistoryRecords() {
-  if (!historyFilter) return;
-  
-  const filter = historyFilter.value;
-  console.log('Filtering history records by:', filter);
-  
-  // 这里可以添加过滤逻辑
-  updateHistoryUI();
-}
-
-// 搜索历史记录
-function searchHistoryRecords() {
-  if (!historySearch) return;
-  
-  const query = historySearch.value.toLowerCase();
-  console.log('Searching history records for:', query);
-  
-  // 这里可以添加搜索逻辑
-  updateHistoryUI();
-}
-
-// 更新历史记录设置
-async function updateHistorySettings() {
-  try {
-    const settings = {
-      autoRecord: autoRecordToggle ? autoRecordToggle.checked : true,
-      maxRecords: maxRecordsInput ? parseInt(maxRecordsInput.value) : 1000,
-      retentionDays: retentionDaysInput ? parseInt(retentionDaysInput.value) : 30
-    };
-    
-    await chrome.storage.local.set({ historySettings: settings });
-    showMessage('History settings updated', 'success');
-  } catch (error) {
-    console.error('Failed to update history settings:', error);
-    showMessage('Failed to update history settings', 'error');
-  }
-}
-
 // ==================== 密码保护功能 ====================
 
 // 切换密码保护
@@ -2709,19 +2327,22 @@ function filterHistoryRecords() {
   let filteredRecords = [...historyRecords];
   
   switch (filter) {
-    case 'today':
+    case 'today': {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= today.getTime());
       break;
-    case 'week':
+    }
+    case 'week': {
       const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= weekAgo);
       break;
-    case 'month':
+    }
+    case 'month': {
       const monthAgo = now - (30 * 24 * 60 * 60 * 1000);
       filteredRecords = historyRecords.filter(record => record.deletedAt >= monthAgo);
       break;
+    }
   }
   
   // 更新显示
@@ -3067,10 +2688,6 @@ async function updateLicenseUI() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'license:getState' });
     const license = response || { plan: 'free' };
-
-    // 🐛 DEBUG: Log complete license data
-    console.log('🔍 updateLicenseUI - Complete license data:', JSON.stringify(license, null, 2));
-
     // Update plan badge
     if (currentPlanBadge) {
       currentPlanBadge.className = 'ap-badge';
